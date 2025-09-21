@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Login - License Manager{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h3 class="card-title text-center mb-4">Admin Login</h3>
+                
+                {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+                
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        const response = await axios.post('/api/auth/login', {
+            username: username,
+            password: password
+        });
+        
+        localStorage.setItem('token', response.data.access_token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+        
+        window.location.href = '/admin';
+    } catch (error) {
+        document.querySelector('.alert-danger') || 
+        document.querySelector('.card-body').insertAdjacentHTML('afterbegin', 
+            `<div class="alert alert-danger">${error.response?.data?.error || 'Login failed'}</div>`
+        );
+    }
+});
+</script>
+{% endblock %}
