@@ -426,6 +426,25 @@ function createStatsModal(title, stats) {
     return new bootstrap.Modal(document.getElementById('statsModal'));
 }
 
+function logoutAndRedirect() {
+    // Remove token from localStorage
+    localStorage.removeItem('token');
+    // Redirect to /admin (or your desired page)
+    window.location.href = '/admin';
+}
+
+// Attach to logout link if using JS navigation
+document.addEventListener('DOMContentLoaded', function() {
+    const logoutLink = document.querySelector('a[href="/api/auth/logout"]');
+    if (logoutLink) {
+        logoutLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+                .then(() => logoutAndRedirect());
+        });
+    }
+});
+
 // Clean up modals on page unload
 window.addEventListener('beforeunload', function() {
     document.querySelectorAll('.modal').forEach(modal => modal.remove());
