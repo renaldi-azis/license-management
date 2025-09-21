@@ -1,13 +1,21 @@
+from config import Config
 import sqlite3
 import os
 from contextlib import contextmanager
 from datetime import datetime
 
-from config import Config
+def get_db_connection():
+    db_uri = Config.SQLALCHEMY_DATABASE_URI
+    if db_uri.startswith("sqlite:///"):
+        db_path = db_uri.replace("sqlite:///", "", 1)
+    else:
+        db_path = db_uri  # fallback, may need more logic for other DBs
+    conn = sqlite3.connect(db_path)
+    return conn
 
 @contextmanager
-def get_db_connection():
-    conn = sqlite3.connect(Config.SQLALCHEMY_DATABASE_URI)
+def get_db_connection_context():
+    conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     try:
         yield conn
@@ -16,7 +24,7 @@ def get_db_connection():
 
 def init_db():
     """Initialize the database with tables and indexes."""
-    with get_db_connection() as conn:
+    with get_db_connection_context() as conn:
         c = conn.cursor()
         
         # Products table
