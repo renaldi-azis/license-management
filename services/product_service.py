@@ -60,3 +60,13 @@ def get_product_stats(product_id):
             'estimated_revenue': estimated_revenue,
             'recent_validations': recent_activity
         }
+
+def remove_product(product_id):
+    from models.database import get_db_connection
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute('DELETE FROM products WHERE id = ?', (product_id,))
+        if c.rowcount == 0:
+            return {'success': False, 'error': 'Product not found'}
+        conn.commit()
+        return {'success': True}

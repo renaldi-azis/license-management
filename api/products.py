@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.database import get_db_connection
 from services.product_service import (
     create_product, get_products, update_product, 
-    get_product_stats
+    get_product_stats, remove_product  # <-- Add remove_product import
 )
 from utils.validators import validate_json
 
@@ -67,3 +67,14 @@ def product_stats(product_id):
     
     stats = get_product_stats(product_id)
     return jsonify(stats)
+
+@bp.route('/<int:product_id>', methods=['DELETE'])
+@jwt_required()
+def delete_product_route(product_id):
+    if get_jwt_identity() != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+
+    result = remove_product(product_id)
+    if result.get('success'):
+        return jsonify({'success': True, 'message': 'Product removed'})
+    return jsonify({'success': False, 'error': result.get('error', 'Unknown error')}), 400

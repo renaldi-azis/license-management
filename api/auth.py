@@ -1,5 +1,5 @@
 from datetime import timedelta
-from flask import Blueprint, request, jsonify, make_response
+from flask import Blueprint, request, jsonify, make_response, redirect, url_for
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -29,3 +29,9 @@ def login():
 def get_current_user():
     current_user = get_jwt_identity()
     return jsonify({'user': current_user})
+
+@bp.route('/logout', methods=['GET', 'POST'])
+def logout():
+    resp = make_response(redirect('/admin'))
+    resp.set_cookie('access_token_cookie', '', expires=0)
+    return resp

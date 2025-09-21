@@ -281,9 +281,86 @@ function setupRealTimeUpdates() {
     });
 }
 
-// Edit product (placeholder)
-function editProduct(productId) {
-    showAlert('Edit functionality coming soon!', 'info');
+// Edit product: show a modal with current product info and allow update
+async function editProduct(productId) {
+    try {
+        // Fetch current product data
+        const response = await axios.get(`${API_BASE}/products`);
+        const product = response.data.products.find(p => p.id === productId);
+        if (!product) {
+            showAlert('Product not found', 'danger');
+            return;
+        }
+
+        // Create modal HTML
+        const modalId = 'editProductModal';
+        let modalEl = document.getElementById(modalId);
+        if (modalEl) modalEl.remove(); // Remove existing modal if present
+
+        const modalHtml = `
+            <div class="modal fade" id="${modalId}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="edit-product-form">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Product: ${product.name}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="edit-product-name" class="form-label">Name</label>
+                                    <input type="text" class="form-control" id="edit-product-name" value="${product.name}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-product-description" class="form-label">Description</label>
+                                    <input type="text" class="form-control" id="edit-product-description" value="${product.description || ''}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-product-max-devices" class="form-label">Max Devices</label>
+                                    <input type="number" class="form-control" id="edit-product-max-devices" value="${product.max_devices}" min="1" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+
+        // Handle form submission
+        document.getElementById('edit-product-form').onsubmit = async function(e) {
+            e.preventDefault();
+            try {
+                await axios.put(`${API_BASE}/products/${productId}`, {
+                    name: document.getElementById('edit-product-name').value,
+                    description: document.getElementById('edit-product-description').value,
+                    max_devices: parseInt(document.getElementById('edit-product-max-devices').value)
+                });
+                showAlert('Product updated successfully!', 'success');
+                modal.hide();
+                await loadProducts();
+                await updateProductSelect();
+            } catch (error) {
+                showAlert(error.response?.data?.error || 'Failed to update product', 'danger');
+            }
+        };
+
+        // Clean up modal after hide
+        document.getElementById(modalId).addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+
+    } catch (error) {
+        showAlert('Failed to load product for editing', 'danger');
+    }
 }
 
 // View product stats
