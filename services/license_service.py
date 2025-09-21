@@ -42,10 +42,30 @@ def get_licenses(page=1, per_page=10):
             license_data = dict(row)
             # Show partial key for security
             license_data['key_display'] = license_data['key'][:8] + '...' if license_data['key'] else None
-            del license_data['key']  # Hide full key
+            license_data['key']  # Hide full key
             licenses.append(license_data)
 
         return licenses, total
+
+def get_license_detail(license_key):
+    """Get detailed information for a specific license."""
+    from models.database import get_db_connection
+
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute('''
+            SELECT l.*, p.name as product_name
+            FROM licenses l
+            LEFT JOIN products p ON l.product_id = p.id
+            WHERE l.key = ?
+        ''', (license_key,))
+        row = c.fetchone()
+        if not row:
+            return None
+        license_data = dict(row)
+        # Optionally, hide the full key in the response
+        license_data['key_display'] = license_data['key']
+        return license_data
 
 def get_license_stats():
     """Get overall license statistics."""

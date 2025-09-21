@@ -148,12 +148,12 @@ async function loadLicenses(page = 1) {
                 <td>${license.usage_count}</td>
                 <td>
                     ${license.status === 'active' ? 
-                        `<button class="btn btn-sm btn-outline-danger" onclick="revokeLicense('${license.key_display}')">
+                        `<button class="btn btn-sm btn-outline-danger" onclick="revokeLicense('${license.key}')">
                             Revoke
                         </button>` : 
                         ''
                     }
-                    <button class="btn btn-sm btn-outline-info" onclick="viewLicenseDetails('${license.id}')">
+                    <button class="btn btn-sm btn-outline-info" onclick="showLicenseDetail('${license.key}')">
                         Details
                     </button>
                 </td>
@@ -428,6 +428,8 @@ async function removeProduct(productId) {
             showAlert('Product deleted successfully', 'success');
             await loadProducts();
             await updateProductSelect();
+            await loadLicenses();
+            await loadStats();
         } else {
             showAlert(response.data.error || 'Failed to delete product', 'danger');
         }
@@ -507,6 +509,32 @@ document.addEventListener('DOMContentLoaded', function() {
     //     new Choices(element, { searchEnabled: false });
     // }
 });
+
+async function showLicenseDetail(licenseKey) {
+    const modalBody = document.getElementById('license-detail-body');
+    modalBody.innerHTML = `<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+    const modal = new bootstrap.Modal(document.getElementById('licenseDetailModal'));
+    modal.show();
+
+    try {
+        const res = await axios.get(`/api/licenses/${licenseKey}`);
+        const lic = res.data;
+        modalBody.innerHTML = `
+            <ul class="list-group">
+                <li class="list-group-item"><strong>License Key:</strong> ${lic.key}</li>
+                <li class="list-group-item"><strong>Product:</strong> ${lic.product_name}</li>
+                <li class="list-group-item"><strong>User:</strong> ${lic.user_id}</li>
+                <li class="list-group-item"><strong>Status:</strong> ${lic.status}</li>
+                <li class="list-group-item"><strong>Expires At:</strong> ${lic.expires_at || 'N/A'}</li>
+                <li class="list-group-item"><strong>Usage Count:</strong> ${lic.usage_count || 0}</li>
+                <li class="list-group-item"><strong>Created At:</strong> ${lic.created_at || 'N/A'}</li>
+                <!-- Add more fields as needed -->
+            </ul>
+        `;
+    } catch (err) {
+        modalBody.innerHTML = `<div class="alert alert-danger">Failed to load license details.</div>`;
+    }
+}
 
 // Clean up modals on page unload
 window.addEventListener('beforeunload', function() {

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from models.database import get_db_connection
 from services.license_service import (
     create_license, revoke_license, get_licenses, 
-    get_license_stats
+    get_license_stats, get_license_detail
 )
 from utils.validators import validate_json, validate_license_key
 
@@ -42,6 +42,18 @@ def revoke_license_route(license_key):
     
     result = revoke_license(license_key)
     if result['success']:
+        return jsonify(result)
+    return jsonify(result), 404
+
+@bp.route('/<license_key>', methods=['GET'])
+@jwt_required()
+@validate_license_key
+def get_license_route(license_key):
+    if get_jwt_identity() != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    result = get_license_detail(license_key)
+    if result:
         return jsonify(result)
     return jsonify(result), 404
 

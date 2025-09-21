@@ -1,59 +1,87 @@
-{% extends "base.html" %}
-
-{% block title %}Login - License Manager{% endblock %}
-
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-4">
-        <div class="card">
-            <div class="card-body">
-                <h3 class="card-title text-center mb-4">Admin Login</h3>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - License Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-key"></i>
+                </div>
+                <h2>License Manager</h2>
+                <p>Secure Admin Access</p>
+            </div>
+            
+            <h3 class="card-title">Admin Login</h3>
+            
+            <!-- Error message placeholder -->
+            <div id="error-message"></div>
+            
+            <form id="login-form">
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user"></i>Username
+                    </label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-user"></i>
+                        <input type="text" class="form-control" id="username" placeholder="Enter your username" required>
+                    </div>
+                </div>
                 
-                {% if error %}
-                <div class="alert alert-danger">{{ error }}</div>
-                {% endif %}
+                <div class="mb-4">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock"></i>Password
+                    </label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-lock"></i>
+                        <input type="password" class="form-control" id="password" placeholder="Enter your password" required>
+                    </div>
+                </div>
                 
-                <form id="login-form">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" class="form-control" id="username" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" required>
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">Login</button>
-                    </div>
-                </form>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-sign-in-alt"></i>Login
+                    </button>
+                </div>
+            </form>
+            
+            <div class="login-footer">
+                <p>© 2025 License Manager | Secure Access</p>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    
-    try {
-        const response = await axios.post('/api/auth/login', {
-            username: username,
-            password: password
+    <script>
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await axios.post('/api/auth/login', {
+                    username: username,
+                    password: password
+                });
+                localStorage.setItem('token', response.data.access_token);
+                axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
+                
+                window.location.href = '/admin';
+            } catch (error) {
+                document.getElementById('error-message').innerHTML = 
+                    `<div class="alert alert-danger">${error.response?.data?.error || 'Login failed'}</div>`;               
+                
+                console.error('Login error:', error);
+            }
         });
-        
-        localStorage.setItem('token', response.data.access_token);
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
-        
-        window.location.href = '/admin';
-    } catch (error) {
-        document.querySelector('.alert-danger') || 
-        document.querySelector('.card-body').insertAdjacentHTML('afterbegin', 
-            `<div class="alert alert-danger">${error.response?.data?.error || 'Login failed'}</div>`
-        );
-    }
-});
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

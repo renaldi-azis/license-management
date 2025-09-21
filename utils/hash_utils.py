@@ -1,16 +1,16 @@
 import hashlib
 import secrets
 import base64
+import string
 
 def hash_license_key(license_key):
     """Create a SHA-256 hash of the license key for secure storage."""
     return hashlib.sha256(license_key.encode('utf-8')).hexdigest()
 
 def generate_license_key(length=16):
-    """Generate a random license key."""
-    # Generate random bytes and encode to base62 (0-9, A-Z, a-z)
-    random_bytes = secrets.token_bytes(length)
-    return base64.urlsafe_b64encode(random_bytes).decode('utf-8').rstrip('=')[:length]
+    """Generate a random alphanumeric license key."""
+    chars = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(chars) for _ in range(length))
 
 def validate_license_format(license_key):
     """Validate license key format."""
