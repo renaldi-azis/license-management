@@ -66,15 +66,15 @@ async function loadProducts() {
                 <td><strong>${product.name}</strong></td>
                 <td>${product.description || ''}</td>
                 <td>
-                    <span class="badge bg-success">${product.active_licenses || 0}</span>
-                    <span class="text-muted"> / ${product.total_licenses || 0}</span>
+                    <span class="badge bg-${(product.active_licenses || 0) == 0? "danger" : "success" }">${product.active_licenses || 0} / ${product.total_licenses || 0}</span>
+                    
                 </td>
                 <td>${product.max_devices}</td>
                 <td>
                     <button class="btn btn-sm btn-outline-primary" onclick="editProduct(${product.id})">
                         Edit
                     </button>
-                    <button class="btn btn-sm btn-outline-success" onclick="viewProductStats(${product.id})">
+                    <button class="btn btn-sm btn-outline-info" onclick="viewProductStats(${product.id})">
                         Stats
                     </button>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeProduct(${product.id})">
@@ -85,6 +85,18 @@ async function loadProducts() {
         `).join('');
     } catch (error) {
         console.error('Failed to load products:', error);
+    }
+}
+
+function changeStatus(stat){    
+    if (stat === 'active'){
+        return 'success';
+    } else if (stat === 'expired'){
+        return 'warning';
+    } else if (stat === 'revoked'){
+        return 'danger';
+    } else {
+        return 'secondary';
     }
 }
 
@@ -108,7 +120,7 @@ async function loadLicenses(page = 1) {
                 <td>${license.product_name}</td>
                 <td>${license.user_id}</td>
                 <td>
-                    <span class="status-badge status-${license.status}">
+                    <span class="badge bg-${changeStatus(license.status)}">
                         ${license.status}
                     </span>
                 </td>
