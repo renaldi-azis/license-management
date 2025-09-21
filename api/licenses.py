@@ -9,7 +9,7 @@ from services.license_service import (
 )
 from utils.validators import validate_json, validate_license_key
 
-bp = Blueprint('licenses', __name__, url_prefix='/licenses')
+bp = Blueprint('licenses', __name__)
 
 @bp.route('', methods=['POST'])
 @jwt_required()

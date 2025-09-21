@@ -8,7 +8,7 @@ from services.product_service import (
 )
 from utils.validators import validate_json
 
-bp = Blueprint('products', __name__, url_prefix='/products')
+bp = Blueprint('products', __name__)
 
 @bp.route('', methods=['POST'])
 @jwt_required()

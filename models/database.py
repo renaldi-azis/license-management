@@ -9,8 +9,9 @@ def get_db_connection():
     if db_uri.startswith("sqlite:///"):
         db_path = db_uri.replace("sqlite:///", "", 1)
     else:
-        db_path = db_uri  # fallback, may need more logic for other DBs
+        db_path = db_uri
     conn = sqlite3.connect(db_path)
+    conn.row_factory = sqlite3.Row  # <-- Add this line
     return conn
 
 @contextmanager

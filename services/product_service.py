@@ -40,7 +40,8 @@ def get_product_stats(product_id):
         license_stats = c.fetchone()
         
         # Revenue estimation (assuming $10/license)
-        estimated_revenue = license_stats['active_licenses'] * 10
+        active_licenses = license_stats['active_licenses'] or 0
+        estimated_revenue = active_licenses * 10
         
         # Recent activity
         week_ago = datetime.now() - timedelta(days=7)

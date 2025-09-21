@@ -1,5 +1,6 @@
+import datetime
 from flask import Flask, render_template
-from flask_jwt_extended import JWTManager
+from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -13,18 +14,60 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     
-    # Initialize extensions
-    JWTManager(app)
-    init_db()
+    # Register error handlers first
+    @app.errorhandler(404)
+    def not_found(error):
+        return {"error": "Endpoint not found"}, 404
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        app.logger.error(f"Internal error: {error}")
+        return {"error": "Internal server error"}, 500
+    
+    # Initialize extensions (in correct order)
+    jwt = JWTManager(app)
+    
+    # Initialize database
+    with app.app_context():
+        init_db()
+    
+    # Initialize rate limiter (requires app context)
     init_limiter(app)
+    
+    # Initialize reCAPTCHA
     init_recaptcha(app)
     
-    # Register blueprints
-    app.register_blueprint(auth.bp, url_prefix='/api')
-    app.register_blueprint(licenses.bp, url_prefix='/api')
-    app.register_blueprint(products.bp, url_prefix='/api')
+    # Health check endpoint
+    @app.route('/health')
+    def health():
+        try:
+            # Test database
+            with app.app_context():
+                from models.database import get_db_connection
+                with get_db_connection() as conn:
+                    conn.execute("SELECT 1")
+            
+            # Test Redis (if available)
+            from services.rate_limiter import redis_client
+            redis_status = "connected" if redis_client and redis_client.ping() else "unavailable"
+            
+            return {
+                'status': 'healthy',
+                'timestamp': app.config.get('TESTING', False) and "test" or str(datetime.utcnow()),
+                'database': 'connected',
+                'redis': redis_status,
+                'version': '1.2.0'
+            }
+        except Exception as e:
+            app.logger.error(f"Health check failed: {e}")
+            return {'status': 'unhealthy', 'error': str(e)}, 503
     
-    # Routes
+    # Register blueprints
+    app.register_blueprint(auth.bp, url_prefix='/api/auth')
+    app.register_blueprint(licenses.bp, url_prefix='/api/licenses')
+    app.register_blueprint(products.bp, url_prefix='/api/products')
+    
+    # Simple routes
     @app.route('/')
     def index():
         return render_template('base.html')
@@ -33,9 +76,36 @@ def create_app():
     def admin():
         return render_template('admin.html')
     
+    @app.route('/login')
+    def login():
+        return render_template('login.html')
+    
+    # Global error handler for rate limiting
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return {
+            'error': 'Rate limit exceeded',
+            'retry_after': getattr(e, 'retry_after', 60)
+        }, 429
+    
+    @app.context_processor
+    def inject_current_user():
+        try:
+            verify_jwt_in_request(optional=True)
+            user = get_jwt_identity()
+        except Exception:
+            user = None
+        return dict(current_user=user)
+    
     return app
 
+# Create and run app
 app = create_app()
 
 if __name__ == '__main__':
+    # Ensure app context for initialization
+    with app.app_context():
+        # Final initialization that needs app context
+        pass
+    
     app.run(host='0.0.0.0', port=5000, debug=Config.DEBUG)

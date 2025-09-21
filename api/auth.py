@@ -1,11 +1,12 @@
-from flask import Blueprint, request, jsonify
+from datetime import timedelta
+from flask import Blueprint, request, jsonify, make_response
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from services.security import verify_admin_credentials
 from utils.validators import validate_json
 
-bp = Blueprint('auth', __name__, url_prefix='/auth')
+bp = Blueprint('auth', __name__)
 
 @bp.route('/login', methods=['POST'])
 @validate_json({'username': str, 'password': str})
@@ -16,10 +17,11 @@ def login():
     if verify_admin_credentials(username, password):
         access_token = create_access_token(
             identity=username,
-            expires_delta=86400  # 24 hours
+            expires_delta=timedelta(days=1)
         )
-        return jsonify({'access_token': access_token, 'user': username})
-    
+        resp = make_response({'access_token': access_token, 'user': username})
+        resp.set_cookie('access_token_cookie', access_token, httponly=True, samesite='Lax')
+        return resp
     return jsonify({'error': 'Invalid credentials'}), 401
 
 @bp.route('/me', methods=['GET'])

@@ -15,3 +15,6 @@ class Config:
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'adminpass')
     DEBUG = os.environ.get('FLASK_ENV') == 'development'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+    JWT_TOKEN_LOCATION = ['cookies']
+    JWT_ACCESS_COOKIE_NAME = 'access_token_cookie'
+    JWT_COOKIE_CSRF_PROTECT = False  # For testing; enable for production
