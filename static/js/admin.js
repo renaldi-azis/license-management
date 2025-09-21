@@ -78,6 +78,9 @@ async function loadProducts() {
                     <button class="btn btn-sm btn-outline-success" onclick="viewProductStats(${product.id})">
                         Stats
                     </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeProduct(${product.id})">
+                        Delete
+                    </button>
                 </td>
             </tr>
         `).join('');
@@ -374,6 +377,25 @@ async function viewProductStats(productId) {
         modal.show();
     } catch (error) {
         showAlert('Failed to load product stats', 'danger');
+    }
+}
+
+async function removeProduct(productId) {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await axios.delete(`${API_BASE}/products/${productId}`);
+        if (response.data.success) {
+            showAlert('Product deleted successfully', 'success');
+            await loadProducts();
+            await updateProductSelect();
+        } else {
+            showAlert(response.data.error || 'Failed to delete product', 'danger');
+        }
+    } catch (error) {
+        showAlert(error.response?.data?.error || 'Failed to delete product', 'danger');
     }
 }
 
