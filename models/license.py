@@ -11,7 +11,7 @@ class License:
             license_key = generate_license_key()
         
         expires_at = datetime.now() + timedelta(days=expires_days)
-        hashed_key = hash_license_key(license_key)
+        # hashed_key = hash_license_key(license_key)
         
         with get_db_connection() as conn:
             c = conn.cursor()
@@ -19,7 +19,7 @@ class License:
                 c.execute('''
                     INSERT INTO licenses (key, product_id, user_id, expires_at, status)
                     VALUES (?, ?, ?, ?, 'active')
-                ''', (hashed_key, product_id, user_id, expires_at))
+                ''', (license_key, product_id, user_id, expires_at))
                 conn.commit()
                 return {'success': True, 'license_key': license_key}
             except Exception as e:
@@ -32,7 +32,7 @@ class License:
         from utils.hash_utils import hash_license_key
         from models.product import Product
         
-        hashed_key = hash_license_key(license_key)
+        # hashed_key = hash_license_key(license_key)
         
         with get_db_connection() as conn:
             c = conn.cursor()
@@ -41,7 +41,7 @@ class License:
                 FROM licenses l
                 JOIN products p ON l.product_id = p.id
                 WHERE l.key = ? AND l.product_id = ? AND l.status = 'active'
-            ''', (hashed_key, product_id))
+            ''', (license_key, product_id))
             
             license = c.fetchone()
             
@@ -51,7 +51,7 @@ class License:
             # Check expiration
             expires_at = license['expires_at']
             if expires_at and datetime.now() > expires_at:
-                c.execute("UPDATE licenses SET status = 'expired' WHERE key = ?", (hashed_key,))
+                c.execute("UPDATE licenses SET status = 'expired' WHERE key = ?", (license_key,))
                 conn.commit()
                 return {'valid': False, 'error': 'License expired'}
             
@@ -65,7 +65,7 @@ class License:
                 SET usage_count = usage_count + 1, 
                     device_id = COALESCE(?, device_id)
                 WHERE key = ?
-            ''', (device_id, hashed_key))
+            ''', (device_id, license_key))
             
             # Log usage
             License.log_usage(license_key, ip_address, 'validation', 'success')
@@ -96,11 +96,11 @@ class License:
         """Revoke a license."""
         from utils.hash_utils import hash_license_key
         
-        hashed_key = hash_license_key(license_key)
+        # hashed_key = hash_license_key(license_key)
         
         with get_db_connection() as conn:
             c = conn.cursor()
-            c.execute("UPDATE licenses SET status = 'revoked' WHERE key = ?", (hashed_key,))
+            c.execute("UPDATE licenses SET status = 'revoked' WHERE key = ?", (license_key,))
             affected = c.rowcount
             conn.commit()
             
