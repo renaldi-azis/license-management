@@ -42,8 +42,7 @@ async function loadStats() {
     try {
         const response = await axios.get(`${API_BASE}/licenses/stats`);
         const stats = response.data;
-        
-        document.getElementById('total-licenses').textContent = stats.total_licenses;
+        console.log('Stats:', stats);        document.getElementById('total-licenses').textContent = stats.total_licenses;
         document.getElementById('active-licenses').textContent = stats.active_licenses;
         document.getElementById('expired-licenses').textContent = stats.expired_licenses;
         document.getElementById('revoked-licenses').textContent = stats.revoked_licenses;

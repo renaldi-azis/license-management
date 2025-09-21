@@ -3,51 +3,95 @@
 {% block title %}Admin Dashboard - License Manager{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Stats Cards -->
-    <div class="col-md-3">
-        <div class="card text-white bg-primary mb-3">
-            <div class="card-header">Total Licenses</div>
-            <div class="card-body">
-                <h5 class="card-title" id="total-licenses">0</h5>
-            </div>
-        </div>
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-header">
+        <h2><i class="fas fa-key"></i> <span>License Manager</span></h2>
     </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-success mb-3">
-            <div class="card-header">Active Licenses</div>
-            <div class="card-body">
-                <h5 class="card-title" id="active-licenses">0</h5>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-warning mb-3">
-            <div class="card-header">Expired Licenses</div>
-            <div class="card-body">
-                <h5 class="card-title" id="expired-licenses">0</h5>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-danger mb-3">
-            <div class="card-header">Revoked Licenses</div>
-            <div class="card-body">
-                <h5 class="card-title" id="revoked-licenses">0</h5>
-            </div>
-        </div>
-    </div>
+    <ul class="sidebar-menu">
+        <li><a href="#" class="active"><i class="fas fa-home"></i> <span>Dashboard</span></a></li>
+        <li><a href="#"><i class="fas fa-key"></i> <span>Licenses</span></a></li>
+        <li><a href="#"><i class="fas fa-cube"></i> <span>Products</span></a></li>
+        <li><a href="#"><i class="fas fa-users"></i> <span>Users</span></a></li>
+        <li><a href="#"><i class="fas fa-chart-bar"></i> <span>Analytics</span></a></li>
+        <li><a href="#"><i class="fas fa-cog"></i> <span>Settings</span></a></li>
+    </ul>
 </div>
 
-<!-- Products Section -->
-<div class="row mt-4">
-    <div class="col-12">
-        <h3>Products</h3>
-        <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#productModal">
-            + Add Product
-        </button>
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Header -->
+    <div class="header">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search...">
+        </div>
+        <div class="user-profile">
+            <div class="notifications">
+                <i class="fas fa-bell"></i>
+            </div>
+            <img src="https://ui-avatars.com/api/?name=Admin+User&background=4361ee&color=fff" alt="Admin User">
+            <span>Admin User</span>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-title">Total Licenses</div>
+                <div class="stat-card-icon" style="background: rgba(67, 97, 238, 0.1); color: var(--primary);">
+                    <i class="fas fa-key"></i>
+                </div>
+            </div>
+            <div class="stat-card-value" id="total-licenses"></div>
+            <div class="stat-card-desc">+12% from last month</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-title">Active Licenses</div>
+                <div class="stat-card-icon" style="background: rgba(76, 201, 240, 0.1); color: var(--success);">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <div class="stat-card-value" id="active-licenses">892</div>
+            <div class="stat-card-desc">71.5% of total licenses</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-title">Expired Licenses</div>
+                <div class="stat-card-icon" style="background: rgba(247, 37, 133, 0.1); color: var(--warning);">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+            </div>
+            <div class="stat-card-value" id="expired-licenses">214</div>
+            <div class="stat-card-desc">17.1% of total licenses</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-card-title">Revoked Licenses</div>
+                <div class="stat-card-icon" style="background: rgba(230, 57, 70, 0.1); color: var(--danger);">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            </div>
+            <div class="stat-card-value" id="revoked-licenses">142</div>
+            <div class="stat-card-desc">11.4% of total licenses</div>
+        </div>
+    </div>
+
+    <!-- Products Section -->
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-title">Products</div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+        </div>
         <div class="table-responsive">
-            <table class="table table-striped" id="products-table">
+            <table class="table" id="products-table">
                 <thead>
                     <tr>
                         <th>Name</th>
@@ -57,53 +101,54 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody>
+
+                </tbody>
             </table>
         </div>
     </div>
-</div>
 
-<!-- Create License Section -->
-<div class="row mt-4">
-    <div class="col-12">
-        <h3>Create License</h3>
-        <div class="card">
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <label class="form-label">Product</label>
-                        <select class="form-select" id="product-select">
-                            <option value="">Select Product...</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">User ID</label>
-                        <input type="text" class="form-control" id="user-id" placeholder="user123">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">Expires (days)</label>
-                        <input type="number" class="form-control" id="expires-days" value="30" min="1">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label">&nbsp;</label>
-                        <div>
-                            <button class="btn btn-success" onclick="createLicense()">
-                                Create License
-                            </button>
-                        </div>
-                    </div>
+    <!-- Create License Section -->
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-title">Create License</div>
+        </div>
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Product</label>
+                <select class="form-select" id="product-select">
+                    <option value="">Select Product...</option>
+                    <option value="1">Premium Suite</option>
+                    <option value="2">Business Pro</option>
+                    <option value="3">Standard Edition</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">User ID</label>
+                <input type="text" class="form-control" id="user-id" placeholder="user123">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Expires (days)</label>
+                <input type="number" class="form-control" id="expires-days" value="30" min="1">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button class="btn btn-success" onclick="createLicense()">
+                        <i class="fas fa-plus-circle"></i> Create License
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Licenses Table -->
-<div class="row mt-4">
-    <div class="col-12">
-        <h3>All Licenses</h3>
+    <!-- Licenses Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <div class="table-title">All Licenses</div>
+        </div>
         <div class="table-responsive">
-            <table class="table table-striped" id="licenses-table">
+            <table class="table" id="licenses-table">
                 <thead>
                     <tr>
                         <th>License Key</th>
@@ -115,7 +160,9 @@
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody>
+                    
+                </tbody>
             </table>
         </div>
     </div>
@@ -155,3 +202,43 @@
 
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 {% endblock %}
+<!-- <script>
+    // Sample functions for demonstration
+    function createLicense() {
+        const product = document.getElementById('product-select').value;
+        const userId = document.getElementById('user-id').value;
+        const expires = document.getElementById('expires-days').value;
+        
+        if (!product || !userId) {
+            alert('Please select a product and enter a user ID');
+            return;
+        }
+        
+        alert(`Creating license for product: ${product}, user: ${userId}, expires in: ${expires} days`);
+        // In a real application, you would make an API call here
+    }
+    
+    function createProduct() {
+        const name = document.getElementById('product-name').value;
+        const description = document.getElementById('product-description').value;
+        const maxDevices = document.getElementById('product-max-devices').value;
+        
+        if (!name) {
+            alert('Please enter a product name');
+            return;
+        }
+        
+        alert(`Creating product: ${name}, description: ${description}, max devices: ${maxDevices}`);
+        // In a real application, you would make an API call here
+        
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('productModal'));
+        modal.hide();
+    }
+    
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script> -->
