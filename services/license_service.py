@@ -15,20 +15,20 @@ def revoke_license(license_key):
     """Revoke a license key."""
     return License.revoke(license_key)
 
-def get_licenses(page=1, per_page=50):
+def get_licenses(page=1, per_page=10):
     """Get all licenses with pagination."""
     from models.database import get_db_connection
     
     offset = (page - 1) * per_page
     
+    # Get licenses with product info
+       
     with get_db_connection() as conn:
         c = conn.cursor()
         
-        # Get total count
         c.execute('SELECT COUNT(*) FROM licenses')
         total = c.fetchone()[0]
         
-        # Get licenses with product info
         c.execute('''
             SELECT l.*, p.name as product_name
             FROM licenses l
@@ -44,7 +44,7 @@ def get_licenses(page=1, per_page=50):
             license_data['key_display'] = license_data['key'][:8] + '...' if license_data['key'] else None
             del license_data['key']  # Hide full key
             licenses.append(license_data)
-        
+
         return licenses, total
 
 def get_license_stats():

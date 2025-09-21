@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.database import get_db_connection
 from services.product_service import (
     create_product, get_products, update_product, 
-    get_product_stats, remove_product  # <-- Add remove_product import
+    get_product_stats, remove_product
 )
 from utils.validators import validate_json
 
@@ -31,16 +31,26 @@ def create_product_route():
 @bp.route('', methods=['GET'])
 @jwt_required()
 def list_products():
-    if get_jwt_identity() != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
-    page = request.args.get('page', 1, type=int)
-    products, total = get_products(page=page)
-    
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 5))
+    products, total = get_products(page, per_page)
+    total_pages = (total + per_page - 1) // per_page
     return jsonify({
         'products': products,
-        'pagination': {'page': page, 'total': total}
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total_pages
+        }
     })
+
+@bp.route('/all', methods=['GET'])
+@jwt_required()
+def get_all_products():
+    from services.product_service import get_products
+    # Get all products without pagination
+    products, _ = get_products(page=1, per_page=10000)  # Use a large per_page to fetch all
+    return jsonify({'products': products})
 
 @bp.route('/<int:product_id>', methods=['PUT'])
 @jwt_required()

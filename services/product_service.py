@@ -4,9 +4,18 @@ def create_product(name, description=None, max_devices=1):
     """Create a new software product."""
     return Product.create(name, description, max_devices)
 
-def get_products(page=1, per_page=50):
-    """Get all products with license statistics."""
-    return Product.get_all(page, per_page)
+def get_products(page=1, per_page=10):
+    from models.database import get_db_connection
+    offset = (page - 1) * per_page
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM products')
+        total = c.fetchone()[0]
+        c.execute('SELECT * FROM products LIMIT ? OFFSET ?', (per_page, offset))
+        rows = c.fetchall()
+        products = [dict(row) for row in rows]
+        # Optionally, add stats to each product here
+        return products, total
 
 def update_product(product_id, **kwargs):
     """Update product information."""
@@ -66,6 +75,7 @@ def remove_product(product_id):
     with get_db_connection() as conn:
         c = conn.cursor()
         c.execute('DELETE FROM products WHERE id = ?', (product_id,))
+        c.execute('DELETE FROM licenses WHERE product_id = ?', (product_id,))
         if c.rowcount == 0:
             return {'success': False, 'error': 'Product not found'}
         conn.commit()

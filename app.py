@@ -76,6 +76,22 @@ def create_app():
     def admin():
         return render_template('admin.html')
     
+    @app.route('/admin/licenses')
+    def admin_licenses():
+        return render_template('licenses.html')
+
+    @app.route('/admin/products')
+    def admin_products():
+        return render_template('products.html')
+    
+    @app.route('/admin/users')
+    def admin_users():
+        return render_template('users.html')
+
+    @app.route('/admin/settings')
+    def admin_settings():
+        return render_template('settings.html')
+    
     @app.route('/login')
     def login():
         return render_template('login.html')

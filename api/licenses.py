@@ -52,12 +52,17 @@ def list_licenses():
         return jsonify({'error': 'Admin access required'}), 403
     
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 50, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
     
     licenses, total = get_licenses(page=page, per_page=per_page)
+    total_pages = (total + per_page - 1) // per_page
     return jsonify({
         'licenses': licenses,
-        'pagination': {'page': page, 'per_page': per_page, 'total': total}
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total_pages
+        }
     })
 
 @bp.route('/stats', methods=['GET'])

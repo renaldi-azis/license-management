@@ -189,7 +189,7 @@ https://your-license-server.com/api
   ],
   "pagination": {
     "page": 1,
-    "per_page": 25,
+    "per_page": 10,
     "total": 100
   }
 }

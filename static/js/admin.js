@@ -1,4 +1,9 @@
 // Global configuration
+
+let productsCurrentPage = 1;
+let licensesCurrentPage = 1;
+let productChoices = null;
+
 const API_BASE = '/api';
 let token = localStorage.getItem('token');
 if (token) {
@@ -18,16 +23,20 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadDashboard() {
     try {
         // Load stats
-        await loadStats();
-        
+        if(window.location.pathname === '/admin') {
+            await loadStats();
+            // Setup real-time updates
+            setupRealTimeUpdates();
+        }
+
+        await updateProductSelect();
+
         // Load products
         await loadProducts();
         
         // Load licenses
         await loadLicenses();
-        
-        // Setup real-time updates
-        setupRealTimeUpdates();
+    
     } catch (error) {
         console.error('Failed to load dashboard:', error);
         if (error.response?.status === 401) {
@@ -42,7 +51,7 @@ async function loadStats() {
     try {
         const response = await axios.get(`${API_BASE}/licenses/stats`);
         const stats = response.data;
-        console.log('Stats:', stats);        document.getElementById('total-licenses').textContent = stats.total_licenses;
+        document.getElementById('total-licenses').textContent = stats.total_licenses;
         document.getElementById('active-licenses').textContent = stats.active_licenses;
         document.getElementById('expired-licenses').textContent = stats.expired_licenses;
         document.getElementById('revoked-licenses').textContent = stats.revoked_licenses;
@@ -55,12 +64,13 @@ async function loadStats() {
 }
 
 // Load products table
-async function loadProducts() {
+async function loadProducts(page = 1) {
     try {
-        const response = await axios.get(`${API_BASE}/products`);
-        const products = response.data.products;
+        const res = await axios.get(`${API_BASE}/products?page=${page}`);
+        const products = res.data.products || [];
+        const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#products-table tbody');
-        
+        if(tbody === null) return;
         tbody.innerHTML = products.map(product => `
             <tr>
                 <td><strong>${product.name}</strong></td>
@@ -83,6 +93,10 @@ async function loadProducts() {
                 </td>
             </tr>
         `).join('');
+         renderPagination('products-pagination', pagination.page, pagination.total, (p) => {
+            productsCurrentPage = p;
+            loadProducts(p);
+        });
     } catch (error) {
         console.error('Failed to load products:', error);
     }
@@ -103,15 +117,16 @@ function changeStatus(stat){
 // Load licenses table
 async function loadLicenses(page = 1) {
     try {
-        const response = await axios.get(`${API_BASE}/licenses?page=${page}`);
-        const licenses = response.data.licenses;
+        const res = await axios.get(`/api/licenses?page=${page}`);
+        const licenses = res.data.licenses || [];
+        const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#licenses-table tbody');
-        
+        if(tbody === null) return;
         tbody.innerHTML = licenses.map(license => `
             <tr class="fade-in">
                 <td>
                     <code class="license-key">${license.key_display}</code>
-                    <button class="btn btn-sm btn-outline-secondary ms-2" 
+                    <button class="btn btn-sm btn-outline-secondary ms-2" s
                             onclick="copyLicenseKey('${license.key_display}')" 
                             title="Copy key">
                         📋
@@ -144,6 +159,10 @@ async function loadLicenses(page = 1) {
                 </td>
             </tr>
         `).join('');
+        renderPagination('licenses-pagination', pagination.page, pagination.total, (p) => {
+            licensesCurrentPage = p;
+            loadLicenses(p);
+        });
     } catch (error) {
         console.error('Failed to load licenses:', error);
     }
@@ -239,7 +258,7 @@ function copyLicenseKey(key) {
 // Update product select dropdown
 async function updateProductSelect() {
     try {
-        const response = await axios.get(`${API_BASE}/products`);
+        const response = await axios.get(`${API_BASE}/products/all`);
         const products = response.data.products;
         const select = document.getElementById('product-select');
         
@@ -247,6 +266,13 @@ async function updateProductSelect() {
             products.map(product => 
                 `<option value="${product.id}">${product.name}</option>`
             ).join('');
+        
+        // Destroy previous Choices instance if exists
+        if (productChoices) {
+            productChoices.destroy();
+        }
+        // Initialize Choices after options are set
+        productChoices = new Choices(select, { searchEnabled: true });
     } catch (error) {
         console.error('Failed to update product select:', error);
     }
@@ -476,6 +502,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(() => logoutAndRedirect());
         });
     }
+    // const element = document.getElementById('product-select');
+    // if (element) {
+    //     new Choices(element, { searchEnabled: false });
+    // }
 });
 
 // Clean up modals on page unload
