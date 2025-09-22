@@ -13,12 +13,13 @@ bp = Blueprint('auth', __name__)
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        data = request.get_json()
+        username, password = data['username'], data['password']
         
         with get_db_connection() as conn:
             c = conn.cursor()
             c.execute('SELECT COUNT(*) FROM users')
+            
             if c.fetchone()[0] == 0:
                 hashed_pw = generate_password_hash(password)
                 c.execute(
@@ -26,49 +27,53 @@ def register():
                     (username, hashed_pw, 'admin')
                 )
                 conn.commit()
-                flash('Admin account created! Please sign in.', 'success')
-                return redirect(url_for('auth.login'))
+                return jsonify({"result":"success"}), 201
 
         with get_db_connection() as conn:
             c = conn.cursor()
             c.execute('SELECT * FROM users WHERE username = ?', (username,))
             if c.fetchone():
-                flash('Username already exists', 'danger')
-                return render_template('register.html')
+                # flash('Username already exists', 'danger')
+                return jsonify({"error":"Username already exists" }), 400
             hashed_pw = generate_password_hash(password)
             c.execute(
                 'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
                 (username, hashed_pw, 'user')
             )
             conn.commit()
-        flash('Account created! Please sign in.', 'success')
-        return redirect(url_for('auth.login'))
+            return jsonify({"result":"success"}), 201
+        
     return render_template('register.html')
 
-@bp.route('/login', methods=['POST'])
-@validate_json({'username': str, 'password': str})
+@bp.route('/login', methods=['POST','GET'])
 def login():
-    data = request.get_json()
-    username, password = data['username'], data['password']
-    role = None
-    # get role by username & password
-    with get_db_connection() as conn:
-        c = conn.cursor()
-        c.execute('SELECT password, role FROM users WHERE username = ?', (username,))
-        row = c.fetchone()
-        if not row or not check_password_hash(row[0], password):
-            return jsonify({'error': 'Invalid credentials'}), 401
-        role = row[1]
+    if request.method == 'POST':        
+        data = request.get_json()
+        username, password = data['username'], data['password']
+        role = None
+        # get role by username & password
+        with get_db_connection() as conn:
+            c = conn.cursor()
+            c.execute('SELECT password, role FROM users WHERE username = ?', (username,))
+            row = c.fetchone()
+            if not row or not check_password_hash(row[0], password):
+                return jsonify({'error': 'Invalid credentials'}), 401
+            if row:
+                expected_password_hash = row[0]
+                role = row[1]
+            else:
+                expected_password_hash = None      
 
-    if verify_admin_credentials(username, password):
-        access_token = create_access_token(
-            identity=role,  # Use role as identity
-            expires_delta=timedelta(days=1)
-        )
-        resp = make_response({'access_token': access_token, 'user': username})
-        resp.set_cookie('access_token_cookie', access_token, httponly=True, samesite='Lax')
-        return resp
-    return jsonify({'error': 'Invalid credentials'}), 401
+        if verify_admin_credentials(expected_password_hash, password):
+            access_token = create_access_token(
+                identity= role,  # Use role as identity
+                expires_delta=timedelta(days=1)
+            )
+            resp = make_response({'access_token': access_token, 'user': username})
+            resp.set_cookie('access_token_cookie', access_token, httponly=True, samesite='Lax')
+            return resp
+        return jsonify({'error': 'Invalid credentials'}), 401
+    return render_template('login.html')
 
 @bp.route('/me', methods=['GET'])
 @jwt_required()

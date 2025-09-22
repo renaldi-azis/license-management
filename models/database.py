@@ -23,6 +23,13 @@ def get_db_connection_context():
     finally:
         conn.close()
 
+def drop_users_table():
+    """Drop the users table if it exists."""
+    with get_db_connection_context() as conn:
+        c = conn.cursor()
+        c.execute('DROP TABLE IF EXISTS users')
+        conn.commit()
+
 def init_db():
     """Initialize the database with tables and indexes."""
     with get_db_connection_context() as conn:

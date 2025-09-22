@@ -5,55 +5,38 @@
 {% block content %}
 
 <!-- Main Content -->
-<div class="main-content">
-    <!-- Header -->
-    <div class="header">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search...">
-        </div>
-        <div class="user-profile">
-            <div class="notifications">
-                <i class="fas fa-bell"></i>
-            </div>
-            <img src="https://ui-avatars.com/api/?name=Admin+User&background=4361ee&color=fff" alt="Admin User">
-            <span>Admin User</span>
-        </div>
+<!-- Products Section -->
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">Products</div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
+            <i class="fas fa-plus"></i> Add Product
+        </button>
     </div>
+    <div class="table-responsive">
+        <table class="table" id="products-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Active Licenses</th>
+                    <th>Max Devices</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
 
-    <!-- Products Section -->
-    <div class="table-container">
-        <div class="table-header">
-            <div class="table-title">Products</div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
-                <i class="fas fa-plus"></i> Add Product
-            </button>
-        </div>
-        <div class="table-responsive">
-            <table class="table" id="products-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Active Licenses</th>
-                        <th>Max Devices</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                </tbody>
-            </table>
-        </div>
-        <!-- Products Pagination -->
-        <nav>
-            <ul class="pagination justify-content-center" id="products-pagination">
-                <!-- Filled by JS -->
-            </ul>
-        </nav>
+            </tbody>
+        </table>
     </div>
-
+    <!-- Products Pagination -->
+    <nav>
+        <ul class="pagination justify-content-center" id="products-pagination">
+            <!-- Filled by JS -->
+        </ul>
+    </nav>
 </div>
+
 
 <!-- Product Modal -->
 <div class="modal fade" id="productModal" tabindex="-1">

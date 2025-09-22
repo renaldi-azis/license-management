@@ -4,167 +4,150 @@
 
 {% block content %}
 
-<!-- Main Content -->
-<div class="main-content">
-    <!-- Header -->
-    <div class="header">
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" placeholder="Search...">
-        </div>
-        <div class="user-profile">
-            <div class="notifications">
-                <i class="fas fa-bell"></i>
+<!-- Stats Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-card-title">Total Licenses</div>
+            <div class="stat-card-icon" style="background: rgba(67, 97, 238, 0.1); color: var(--primary);">
+                <i class="fas fa-key"></i>
             </div>
-            <img src="https://ui-avatars.com/api/?name=Admin+User&background=4361ee&color=fff" alt="Admin User">
-            <span>Admin User</span>
         </div>
+        <div class="stat-card-value" id="total-licenses"></div>
+        <div class="stat-card-desc">total licenses</div>
     </div>
-
-    <!-- Stats Cards -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-title">Total Licenses</div>
-                <div class="stat-card-icon" style="background: rgba(67, 97, 238, 0.1); color: var(--primary);">
-                    <i class="fas fa-key"></i>
-                </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-card-title">Active Licenses</div>
+            <div class="stat-card-icon" style="background: rgba(76, 201, 240, 0.1); color: var(--success);">
+                <i class="fas fa-check-circle"></i>
             </div>
-            <div class="stat-card-value" id="total-licenses"></div>
-            <div class="stat-card-desc">total licenses</div>
         </div>
-        
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-title">Active Licenses</div>
-                <div class="stat-card-icon" style="background: rgba(76, 201, 240, 0.1); color: var(--success);">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-            </div>
-            <div class="stat-card-value" id="active-licenses">892</div>
-            <div class="stat-card-desc" id="active-licenses-percent">71.5% of total licenses</div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-title">Expired Licenses</div>
-                <div class="stat-card-icon" style="background: rgba(247, 37, 133, 0.1); color: var(--warning);">
-                    <i class="fas fa-exclamation-circle"></i>
-                </div>
-            </div>
-            <div class="stat-card-value" id="expired-licenses">214</div>
-            <div class="stat-card-desc" id="expired-licenses-percent">17.1% of total licenses</div>
-        </div>
-        
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-card-title">Revoked Licenses</div>
-                <div class="stat-card-icon" style="background: rgba(230, 57, 70, 0.1); color: var(--danger);">
-                    <i class="fas fa-times-circle"></i>
-                </div>
-            </div>
-            <div class="stat-card-value" id="revoked-licenses">142</div>
-            <div class="stat-card-desc" id="revoked-licenses-percent">11.4% of total licenses</div>
-        </div>
+        <div class="stat-card-value" id="active-licenses">892</div>
+        <div class="stat-card-desc" id="active-licenses-percent">71.5% of total licenses</div>
     </div>
-
-    <!-- Products Section -->
-    <div class="table-container">
-        <div class="table-header">
-            <div class="table-title">Products</div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
-                <i class="fas fa-plus"></i> Add Product
-            </button>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-card-title">Expired Licenses</div>
+            <div class="stat-card-icon" style="background: rgba(247, 37, 133, 0.1); color: var(--warning);">
+                <i class="fas fa-exclamation-circle"></i>
+            </div>
         </div>
-        <div class="table-responsive">
-            <table class="table" id="products-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>Active Licenses</th>
-                        <th>Max Devices</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Filled by JS -->
-                </tbody>
-            </table>
-        </div>
-        <!-- Products Pagination -->
-        <nav>
-            <ul class="pagination justify-content-center" id="products-pagination">
-                <!-- Filled by JS -->
-            </ul>
-        </nav>
+        <div class="stat-card-value" id="expired-licenses">214</div>
+        <div class="stat-card-desc" id="expired-licenses-percent">17.1% of total licenses</div>
     </div>
-
-    <!-- Create License Section -->
-    <div class="table-container">
-        <div class="table-header">
-            <div class="table-title">Create License</div>
-        </div>
-        <div class="row">
-            <div class="col-md-3">
-                <div class="mb-3">
-                <label for="product-select" class="form-label">Product</label>
-                <select id="product-select" class="form-select">
-                    <option value="">Select Product...</option>
-                    <!-- options will be populated by JS -->
-                </select>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">User ID</label>
-                <input type="text" class="form-control" id="user-id" placeholder="user123">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Expires (days)</label>
-                <input type="number" class="form-control" id="expires-days" value="30" min="1">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">&nbsp;</label>
-                <div>
-                    <button class="btn btn-success" onclick="createLicense()">
-                        <i class="fas fa-plus-circle"></i> Create License
-                    </button>
-                </div>
+    
+    <div class="stat-card">
+        <div class="stat-card-header">
+            <div class="stat-card-title">Revoked Licenses</div>
+            <div class="stat-card-icon" style="background: rgba(230, 57, 70, 0.1); color: var(--danger);">
+                <i class="fas fa-times-circle"></i>
             </div>
         </div>
-    </div>
-
-    <!-- Licenses Table -->
-    <div class="table-container">
-        <div class="table-header">
-            <div class="table-title">All Licenses</div>
-        </div>
-        <div class="table-responsive">
-            <table class="table" id="licenses-table">
-                <thead>
-                    <tr>
-                        <th>License Key</th>
-                        <th>Product</th>
-                        <th>User</th>
-                        <th>Status</th>
-                        <th>Expires</th>
-                        <th>Usage</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Filled by JS -->
-                </tbody>
-            </table>
-        </div>
-        <!-- Licenses Pagination -->
-        <nav>
-            <ul class="pagination justify-content-center" id="licenses-pagination">
-                <!-- Filled by JS -->
-            </ul>
-        </nav>
+        <div class="stat-card-value" id="revoked-licenses">142</div>
+        <div class="stat-card-desc" id="revoked-licenses-percent">11.4% of total licenses</div>
     </div>
 </div>
+
+<!-- Products Section -->
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">Products</div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
+            <i class="fas fa-plus"></i> Add Product
+        </button>
+    </div>
+    <div class="table-responsive">
+        <table class="table" id="products-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Active Licenses</th>
+                    <th>Max Devices</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Filled by JS -->
+            </tbody>
+        </table>
+    </div>
+    <!-- Products Pagination -->
+    <nav>
+        <ul class="pagination justify-content-center" id="products-pagination">
+            <!-- Filled by JS -->
+        </ul>
+    </nav>
+</div>
+
+<!-- Create License Section -->
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">Create License</div>
+    </div>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="mb-3">
+            <label for="product-select" class="form-label">Product</label>
+            <select id="product-select" class="form-select">
+                <option value="">Select Product...</option>
+                <!-- options will be populated by JS -->
+            </select>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">User ID</label>
+            <input type="text" class="form-control" id="user-id" placeholder="user123">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Expires (days)</label>
+            <input type="number" class="form-control" id="expires-days" value="30" min="1">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">&nbsp;</label>
+            <div>
+                <button class="btn btn-success" onclick="createLicense()">
+                    <i class="fas fa-plus-circle"></i> Create License
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Licenses Table -->
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">All Licenses</div>
+    </div>
+    <div class="table-responsive">
+        <table class="table" id="licenses-table">
+            <thead>
+                <tr>
+                    <th>License Key</th>
+                    <th>Product</th>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>Expires</th>
+                    <th>Usage</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Filled by JS -->
+            </tbody>
+        </table>
+    </div>
+    <!-- Licenses Pagination -->
+    <nav>
+        <ul class="pagination justify-content-center" id="licenses-pagination">
+            <!-- Filled by JS -->
+        </ul>
+    </nav>
+</div>
+
 
 <!-- Product Modal -->
 <div class="modal fade" id="productModal" tabindex="-1">

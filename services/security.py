@@ -10,12 +10,14 @@ def init_recaptcha(app):
     if Config.RECAPTCHA_SITE_KEY and Config.RECAPTCHA_SECRET_KEY:
         recaptcha = ReCaptcha(app)
 
-def verify_admin_credentials(username, password):
-    """Verify admin credentials."""
-    # In production, this should check against database
+def verify_admin_credentials(hashed_password, password):
+    """Verify credentials."""
+    # verify credientials using username and password
+    if(hashed_password == None or password == None):
+        return False
+
     # For now, using environment variables
-    if (username == Config.ADMIN_USERNAME and 
-        check_password_hash(generate_password_hash(Config.ADMIN_PASSWORD), password)):
+    if(check_password_hash(hashed_password, password)):
         return True
     return False
 

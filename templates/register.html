@@ -204,15 +204,28 @@
             // In a real application, you would make an API call here
             try {
                 // Simulate API call delay
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
                 
-                // For demo purposes, simulate successful registration
-                errorDiv.innerHTML = '<div class="alert alert-success">Registration successful! Redirecting to login...</div>';
-                
-                // In a real app, this would redirect after successful registration
-                setTimeout(() => {
-                    alert('Registration complete! You would now be redirected to login.');
-                }, 1500);
+                try {
+                    const response = await axios.post('/api/auth/register', {
+                        username: username,
+                        password: password
+                    });
+                    // For demo purposes, simulate successful registration
+                    errorDiv.innerHTML = '<div class="alert alert-success">Registration successful! Redirecting to login...</div>';   
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 2000);
+                    
+                } catch (error) {
+                    errorDiv.innerHTML = 
+                        `<div class="alert alert-danger">${error.response?.data?.error || 'Register failed'}</div>`;               
+                    
+                    console.error('Register error:', error);
+                }                
+                             
+    
             } catch (error) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">${error.message || 'Registration failed'}</div>`;
             }
