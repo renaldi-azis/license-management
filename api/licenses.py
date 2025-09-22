@@ -7,9 +7,16 @@ from services.license_service import (
     create_license, revoke_license, get_licenses, 
     get_license_stats, get_license_detail
 )
+import re
 from utils.validators import validate_json, validate_license_key
 
 bp = Blueprint('licenses', __name__)
+
+
+
+def contains_xss(value):
+    # Simple check for script tags or suspicious input
+    return bool(re.search(r'<script|onerror=|onload=|javascript:', value, re.IGNORECASE))
 
 @bp.route('', methods=['POST'])
 @jwt_required()
@@ -29,6 +36,9 @@ def create_license_route():
         expires_days=data.get('expires_days', 30)
     )
     
+    if contains_xss(data.get('user_id', '')):
+        return jsonify({'error': 'Invalid input detected'}), 400
+
     if result['success']:
         return jsonify(result), 201
     return jsonify(result), 400

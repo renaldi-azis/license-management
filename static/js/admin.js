@@ -211,7 +211,7 @@ async function loadLicenses(page = 1) {
                 <td>
                     <code class="license-key">${license.key_display}</code>
                     <button class="btn btn-sm btn-outline-secondary ms-2" s
-                            onclick="copyLicenseKey('${license.key_display}')" 
+                            onclick="copyLicenseKey('${license.key}')" 
                             title="Copy key">
                         📋
                     </button>

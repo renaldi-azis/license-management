@@ -5,13 +5,20 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from config import Config
-from api import auth, licenses, products
+from api import auth, licenses, products , validation
 from models.database import init_db
 from services.rate_limiter import init_limiter
 from services.security import init_recaptcha
 
+limiter = Limiter(
+    get_remote_address,
+    app=None,  # Will be set later
+    default_limits=["10 per minute"]  # Example: 10 requests per minute per IP
+)
+
 def create_app():
     app = Flask(__name__)
+    limiter.init_app(app)
     app.config.from_object(Config)
     
     # Register error handlers first
@@ -66,6 +73,7 @@ def create_app():
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(licenses.bp, url_prefix='/api/licenses')
     app.register_blueprint(products.bp, url_prefix='/api/products')
+    app.register_blueprint(validation.bp, url_prefix='/api/validate')  # For web routes
     
     # Simple routes
     @app.route('/')

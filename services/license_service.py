@@ -110,3 +110,16 @@ def get_license_stats():
             'max_usage': usage_stats['max_usage'] or 0,
             'recent_validations': recent_validations
         }
+    
+def validate_license(product_name, license_key, ip_address, device_id=None):
+    """Validate a license key for a product."""
+    # Find product by name
+    product = Product.get_by_name(product_name)
+    if not product:
+        return {'valid': False, 'error': 'Product not found'}
+
+    product_id = product['id']
+
+    # Validate license using License model
+    result = License.validate(product_id, license_key, ip_address, device_id)
+    return result

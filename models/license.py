@@ -50,10 +50,17 @@ class License:
             
             # Check expiration
             expires_at = license['expires_at']
-            if expires_at and datetime.now() > expires_at:
-                c.execute("UPDATE licenses SET status = 'expired' WHERE key = ?", (license_key,))
-                conn.commit()
-                return {'valid': False, 'error': 'License expired'}
+            if expires_at:
+                if isinstance(expires_at, str):
+                    # Try parsing as ISO format or SQLite format
+                    try:
+                        expires_at = datetime.fromisoformat(expires_at)
+                    except ValueError:
+                        expires_at = datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S")
+                if datetime.now() > expires_at:
+                    c.execute("UPDATE licenses SET status = 'expired' WHERE key = ?", (license_key,))
+                    conn.commit()
+                    return {'valid': False, 'error': 'License expired'}
             
             # Check device limit
             if device_id and license['device_id'] and license['device_id'] != device_id:
@@ -68,7 +75,7 @@ class License:
             ''', (device_id, license_key))
             
             # Log usage
-            License.log_usage(license_key, ip_address, 'validation', 'success')
+            # License.log_usage(license_key, ip_address, 'validation', 'success')
             conn.commit()
             
             return {
@@ -109,3 +116,12 @@ class License:
                 return {'success': True, 'message': 'License revoked'}
             
             return {'success': False, 'error': 'License not found'}
+        
+    @staticmethod
+    def get_by_name(name):
+        from models.database import get_db_connection
+        with get_db_connection() as conn:
+            c = conn.cursor()
+            c.execute('SELECT * FROM products WHERE product_name = ?', (name,))
+            row = c.fetchone()
+            return dict(row) if row else None

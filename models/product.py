@@ -59,6 +59,14 @@ class Product:
             c.execute('SELECT * FROM products WHERE id = ?', (product_id,))
             row = c.fetchone()
             return dict(row) if row else None
+    @staticmethod
+    def get_by_name(name):
+        """Get product by name."""
+        with get_db_connection() as conn:
+            c = conn.cursor()
+            c.execute('SELECT * FROM products WHERE name = ?', (name,))
+            row = c.fetchone()
+            return dict(row) if row else None
     
     @staticmethod
     def update(product_id, **kwargs):
