@@ -5,10 +5,10 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 
 class SecurityTestSuite:
-    def __init__(self, base_url="http://127.0.0.1:5000"):
+    def __init__(self, base_url="http://localhost:5000"):
         self.base_url = base_url
         self.session = requests.Session()
-        self.test_license_key = "U4lPy2qvhGJPZfCl"
+        self.test_license_key = "xpp21xAMBqlaxFuk"
         self.test_product = "Product1"
         self.admin_username = "admin"
         self.admin_password = "adminpass"  # <-- Set your admin password here
@@ -81,7 +81,9 @@ class SecurityTestSuite:
                 },
                 headers=headers
             )
+            print(response.json())
             # Accept 400, 401, or 422 as valid rejections
+            print(response.json())
             assert response.status_code in [400, 401, 422], \
                 f"XSS input accepted: {input_val[:20]}... - Status: {response.status_code}"
             print(f"✅ XSS blocked: {input_val[:20]}...")

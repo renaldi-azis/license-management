@@ -13,7 +13,7 @@ import requests
 
 class TestRunner:
     def __init__(self):
-        self.base_url = "http://localhost:5000"
+        self.base_url = "http://103.152.165.248"
         self.test_files = [
             "test_integration.py",
             "test_security.py", 
