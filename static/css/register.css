@@ -1,0 +1,273 @@
+:root {
+    --primary: #6c5ce7;
+    --primary-dark: #5649c9;
+    --secondary: #a29bfe;
+    --success: #00b894;
+    --info: #00cec9;
+    --info-dark: #00a6a1;
+    --warning: #fdcb6e;
+    --warning-text: #e17055;
+    --danger: #d63031;
+    --light: #f8f9fa;
+    --dark: #2d3436;
+    --gray: #636e72;
+    --border-radius: 16px;
+    --card-radius: 12px;
+    --transition: all 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #6c5ce7 0%, #00cec9 100%);
+    color: var(--dark);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.register-container {
+    width: 100%;
+    max-width: 450px;
+}
+
+.register-card {
+    background: white;
+    border-radius: var(--card-radius);
+    padding: 35px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.register-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--primary), var(--info));
+}
+
+.register-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+
+.logo {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.logo-icon {
+    background: linear-gradient(135deg, var(--primary), var(--info));
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 15px;
+    font-size: 28px;
+    color: white;
+    box-shadow: 0 5px 15px rgba(108, 92, 231, 0.3);
+}
+
+.logo h2 {
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 5px;
+}
+
+.logo p {
+    color: var(--gray);
+    font-size: 0.95rem;
+}
+
+.card-title {
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--dark);
+}
+
+/* Form Elements */
+.form-label {
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--dark);
+    display: flex;
+    align-items: center;
+}
+
+.form-label i {
+    margin-right: 8px;
+    color: var(--primary);
+}
+
+.form-control {
+    border-radius: 10px;
+    padding: 12px 16px;
+    border: 1px solid #e2e8f0;
+    transition: var(--transition);
+    font-size: 1rem;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+    border-color: var(--primary);
+}
+
+.input-group {
+    position: relative;
+}
+
+.input-group .form-control {
+    padding-left: 40px;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray);
+    z-index: 5;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gray);
+    cursor: pointer;
+    z-index: 5;
+}
+
+/* Buttons */
+.btn {
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-weight: 500;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.btn-primary {
+    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    color: white;
+    box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(108, 92, 231, 0.4);
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* Alert */
+.alert {
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border: none;
+}
+
+.alert-danger {
+    background: rgba(214, 48, 49, 0.15);
+    color: var(--danger);
+    border-left: 4px solid var(--danger);
+}
+
+.alert-success {
+    background: rgba(0, 184, 148, 0.15);
+    color: var(--success);
+    border-left: 4px solid var(--success);
+}
+
+/* Footer */
+.register-footer {
+    text-align: center;
+    margin-top: 25px;
+    color: var(--gray);
+    font-size: 0.9rem;
+}
+
+.register-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.register-footer a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* Password strength indicator */
+.password-strength {
+    height: 5px;
+    border-radius: 5px;
+    margin-top: 8px;
+    background: #eee;
+    overflow: hidden;
+}
+
+.password-strength-bar {
+    height: 100%;
+    width: 0%;
+    transition: var(--transition);
+    border-radius: 5px;
+}
+
+.strength-weak { background: var(--danger); width: 33%; }
+.strength-medium { background: var(--warning-text); width: 66%; }
+.strength-strong { background: var(--success); width: 100%; }
+
+.password-strength-text {
+    font-size: 0.8rem;
+    margin-top: 5px;
+    text-align: right;
+}
+
+/* Responsive */
+@media (max-width: 576px) {
+    .register-card {
+        padding: 25px;
+    }
+    
+    .logo-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.register-card {
+    animation: fadeIn 0.5s ease-out;
+}

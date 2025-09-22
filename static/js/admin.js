@@ -56,6 +56,13 @@ async function loadStats() {
         document.getElementById('expired-licenses').textContent = stats.expired_licenses;
         document.getElementById('revoked-licenses').textContent = stats.revoked_licenses;
         
+        document.getElementById('active-licenses-percent').textContent = 
+            `${((stats.active_licenses / stats.total_licenses) * 100).toFixed(1)}% of total licenses`;
+        document.getElementById('expired-licenses-percent').textContent = 
+            `${((stats.expired_licenses / stats.total_licenses) * 100).toFixed(1)}% of total licenses`;
+        document.getElementById('revoked-licenses-percent').textContent = 
+            `${((stats.revoked_licenses / stats.total_licenses) * 100).toFixed(1)}% of total licenses`;
+
         // Update cards with animations
         updateStatsAnimation();
     } catch (error) {

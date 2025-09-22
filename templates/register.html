@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - License Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <link href="{{ url_for('static', filename='css/register.css') }}" rel="stylesheet">
+
+</head>
+<body>
+    <div class="register-container">
+        <div class="register-card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-key"></i>
+                </div>
+                <h2>License Manager</h2>
+                <p>Create Your Account</p>
+            </div>
+            
+            <h3 class="card-title">Sign Up</h3>
+            
+            <!-- Error message placeholder -->
+            <div id="error-message"></div>
+            
+            <form id="register-form" method="POST" action="{{ url_for('auth.register') }}">
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user"></i>Username
+                    </label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-user"></i>
+                        <input type="text" name="username" id="username" class="form-control" placeholder="Choose a username" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock"></i>Password
+                    </label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-lock"></i>
+                        <input type="password" name="password" id="password" class="form-control" placeholder="Create a password" required>
+                        <span class="password-toggle" id="password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+                    <div class="password-strength">
+                        <div class="password-strength-bar" id="password-strength-bar"></div>
+                    </div>
+                    <div class="password-strength-text" id="password-strength-text"></div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="confirm-password" class="form-label">
+                        <i class="fas fa-lock"></i>Confirm Password
+                    </label>
+                    <div class="input-group">
+                        <i class="input-icon fas fa-lock"></i>
+                        <input type="password" name="password" id="confirm-password" class="form-control" placeholder="Confirm your password" required>
+                        <span class="password-toggle" id="confirm-password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </span>
+                    </div>
+                    <div id="password-match" class="password-strength-text"></div>
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <i class="fas fa-user-plus"></i>Sign Up
+                    </button>
+                </div>
+            </form>
+            
+            <div class="register-footer">
+                <p>Already have an account? <a href="{{ url_for('auth.login') }}">Sign In</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Password visibility toggle
+        document.getElementById('password-toggle').addEventListener('click', function() {
+            const passwordInput = document.getElementById('password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+        
+        document.getElementById('confirm-password-toggle').addEventListener('click', function() {
+            const passwordInput = document.getElementById('confirm-password');
+            const icon = this.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
+        
+        // Password strength indicator
+        document.getElementById('password').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.getElementById('password-strength-bar');
+            const strengthText = document.getElementById('password-strength-text');
+            
+            // Reset
+            strengthBar.className = 'password-strength-bar';
+            strengthText.textContent = '';
+            
+            if (password.length === 0) return;
+            
+            // Calculate strength
+            let strength = 0;
+            
+            // Length check
+            if (password.length > 6) strength += 1;
+            if (password.length > 10) strength += 1;
+            
+            // Character variety checks
+            if (/[A-Z]/.test(password)) strength += 1;
+            if (/[0-9]/.test(password)) strength += 1;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+            
+            // Update UI
+            if (strength < 2) {
+                strengthBar.classList.add('strength-weak');
+                strengthText.textContent = 'Weak password';
+                strengthText.style.color = 'var(--danger)';
+            } else if (strength < 4) {
+                strengthBar.classList.add('strength-medium');
+                strengthText.textContent = 'Medium strength';
+                strengthText.style.color = 'var(--warning-text)';
+            } else {
+                strengthBar.classList.add('strength-strong');
+                strengthText.textContent = 'Strong password';
+                strengthText.style.color = 'var(--success)';
+            }
+        });
+        
+        // Password confirmation check
+        document.getElementById('confirm-password').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            const matchText = document.getElementById('password-match');
+            
+            if (confirmPassword.length === 0) {
+                matchText.textContent = '';
+                return;
+            }
+            
+            if (password === confirmPassword) {
+                matchText.textContent = 'Passwords match';
+                matchText.style.color = 'var(--success)';
+            } else {
+                matchText.textContent = 'Passwords do not match';
+                matchText.style.color = 'var(--danger)';
+            }
+        });
+        
+        // Form submission
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('error-message');
+            
+            // Clear previous errors
+            errorDiv.innerHTML = '';
+            
+            // Validation
+            if (!username || !password || !confirmPassword) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">Please fill in all fields</div>';
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">Passwords do not match</div>';
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">Password must be at least 6 characters long</div>';
+                return;
+            }
+            
+            // In a real application, you would make an API call here
+            try {
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // For demo purposes, simulate successful registration
+                errorDiv.innerHTML = '<div class="alert alert-success">Registration successful! Redirecting to login...</div>';
+                
+                // In a real app, this would redirect after successful registration
+                setTimeout(() => {
+                    alert('Registration complete! You would now be redirected to login.');
+                }, 1500);
+            } catch (error) {
+                errorDiv.innerHTML = `<div class="alert alert-danger">${error.message || 'Registration failed'}</div>`;
+            }
+        });
+    </script>
+</body>
+</html>

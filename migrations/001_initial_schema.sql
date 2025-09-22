@@ -38,6 +38,14 @@ CREATE TABLE IF NOT EXISTS usage_logs (
     error_message TEXT
 );
 
+-- Usage user table
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL
+    role TEXT NOT NULL DEFAULT 'user'
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_licenses_key ON licenses(key);
 CREATE INDEX IF NOT EXISTS idx_licenses_status ON licenses(status);

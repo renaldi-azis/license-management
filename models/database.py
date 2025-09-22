@@ -67,6 +67,16 @@ def init_db():
                 response_status TEXT
             )
         ''')
+
+        # Users table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user'
+            );
+        ''')
         
         # Indexes for performance
         c.execute('CREATE INDEX IF NOT EXISTS idx_licenses_key ON licenses(key)')

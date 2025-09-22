@@ -1,5 +1,5 @@
 import datetime
-from flask import Flask, render_template
+from flask import Flask, redirect, render_template, url_for
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -70,7 +70,22 @@ def create_app():
     # Simple routes
     @app.route('/')
     def index():
-        return render_template('base.html')
+        try:
+            verify_jwt_in_request(optional=True)
+            if get_jwt_identity() == 'admin':
+                return redirect(url_for('admin'))
+        except Exception:
+            pass
+
+        try:
+            verify_jwt_in_request(optional=True)
+            user = get_jwt_identity()
+        except Exception:
+            user = None
+        if user:
+            return redirect(url_for('admin'))
+        else:
+            return redirect(url_for('login'))
     
     @app.route('/admin')
     def admin():
