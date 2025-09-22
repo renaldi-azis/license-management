@@ -177,6 +177,64 @@ body {
     border: 2px solid var(--primary);
 }
 
+/* Improved logout button */
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    color: #6c757d;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.logout-btn:hover {
+    background-color: #e9ecef;
+    color: #495057;
+    border-color: #ced4da;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .user-profile span {
+        display: none;
+    }
+    
+    .logout-btn span {
+        display: none;
+    }
+    
+    .logout-btn {
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+        margin-left: 0;
+    }
+}
+
 /* Stats Cards */
 .stats-grid {
     display: grid;

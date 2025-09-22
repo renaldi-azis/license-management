@@ -36,6 +36,9 @@ async function loadDashboard() {
         
         // Load licenses
         await loadLicenses();
+
+        // Load Users
+        await loadUsers();
     
     } catch (error) {
         console.error('Failed to load dashboard:', error);
@@ -109,6 +112,53 @@ async function loadProducts(page = 1) {
     }
 }
 
+async function loadUsers(page = 1) {
+    try{
+        const res = await axios.get(`${API_BASE}/auth/users?page=${page}`);
+        const users = res.data.users || [];
+        const pagination = res.data.pagination || { page: 1, total: 1 };
+        const tbody = document.querySelector('#users-table tbody');
+        if(tbody === null) return;
+        let no = 1;
+        tbody.innerHTML = users.map(user => `
+            <tr>
+                <td>${no++}</td>
+                <td>${user.username}</td>
+                <td>${user.first_name || ''}&nbsp;${user.last_name || ''}</td>                
+                <td>  
+                    <span class="badge bg-${changeRoleToStatus(user.role)}">
+                        ${user.role}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="changeUserRole('${user.username}','${user.role}')">
+                        Change Role
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeUser('${user.username}')">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+            renderPagination('users-pagination', pagination.page, pagination.total, (p) => {
+            usersCurrentPage = p;
+            loadUsers(p);
+        });
+    }catch (error) {
+        console.error('Failed to load users:', error);
+    }
+}
+
+function changeRoleToStatus(role){
+    if (role === 'admin'){
+        return 'danger';
+    } else if (role === 'user'){
+        return 'success';
+    } else {
+        return 'secondary';
+    }
+}
+
 function changeStatus(stat){    
     if (stat === 'active'){
         return 'success';
@@ -119,6 +169,33 @@ function changeStatus(stat){
     } else {
         return 'secondary';
     }
+}
+
+async function changeUserRole(username,role) {
+    // Implement role change logic here
+    const newrole = (role == "admin"? "user":"admin");
+    try{
+        const res = await axios.put(`${API_BASE}/auth/users/${username}/${newrole}`);
+        showAlert('User role changed successfully', 'success');
+        loadUsers();
+    }catch(error){
+        showAlert(error.response?.data?.error || 'Failed to change user role', 'danger');
+    }
+}
+
+async function removeUser(username) {
+    // Implement user removal logic here
+    if (!confirm(`Are you sure you want to delete user ${username}? This action cannot be undone.`)) {
+        return;        
+    }
+    try{
+        const res = await axios.delete(`${API_BASE}/auth/users/${username}`);
+        showAlert('User deleted successfully', 'success');
+        loadUsers();
+    }catch(error){
+        showAlert( error.response?.data?.error ||'Failed to delete user', 'danger');
+    }
+
 }
 
 // Load licenses table
@@ -268,7 +345,7 @@ async function updateProductSelect() {
         const response = await axios.get(`${API_BASE}/products/all`);
         const products = response.data.products;
         const select = document.getElementById('product-select');
-        
+        if(!select) return;
         select.innerHTML = '<option value="">Select Product...</option>' + 
             products.map(product => 
                 `<option value="${product.id}">${product.name}</option>`

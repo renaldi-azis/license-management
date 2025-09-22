@@ -102,3 +102,82 @@ def logout():
     resp = make_response(redirect('/admin'))
     resp.set_cookie('access_token_cookie', '', expires=0)
     return resp
+
+@bp.route('/users', methods=['GET'])
+@jwt_required()
+def list_users():
+    current_user = get_jwt_identity()
+    if current_user != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 5))
+    offset = (page - 1) * per_page
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM users')
+        total = c.fetchone()[0]
+        
+        c.execute('''
+            SELECT id, username, first_name, last_name, role 
+            FROM users 
+            WHERE username != ?
+            ORDER BY id 
+            LIMIT ? OFFSET ?
+        ''', (current_user, per_page, offset))
+        
+        users = [
+            {
+                'id': row[0],
+                'username': row[1],
+                'first_name': row[2],
+                'last_name': row[3],
+                'role': row[4]
+            } for row in c.fetchall()
+        ]
+    total_pages = (total + per_page - 1) // per_page
+    return jsonify({
+        'users': users,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total_pages
+        }
+    })
+
+@bp.route('/users/<string:username>/<string:role>', methods=['PUT'])
+@jwt_required()
+def change_user_role(username, role):
+    current_user = get_jwt_identity()
+    if current_user != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    # data = request.get_json()
+    # new_role = data.get('role')
+    if role not in ['admin', 'user']:
+        return jsonify({'error': 'Invalid role specified'}), 400
+    
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute('UPDATE users SET role = ? WHERE username = ?', (role, username))
+        if c.rowcount == 0:
+            return jsonify({'error': 'User not found'}), 404
+        conn.commit()
+    
+    return jsonify({'result': 'success'})
+
+@bp.route('/users/<string:username>', methods=['DELETE'])
+@jwt_required()
+def delete_user(username):
+    current_user = get_jwt_identity()
+    if current_user != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute('DELETE FROM users WHERE username = ?', (username,))
+        if c.rowcount == 0:
+            return jsonify({'error': 'User not found'}), 404
+        conn.commit()
+    
+    return jsonify({'result': 'success'})

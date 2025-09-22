@@ -124,6 +124,21 @@ def create_app():
         try:
             verify_jwt_in_request(optional=True)
             user = get_jwt_identity()
+            # get user info from db by username
+            from models.database import get_db_connection
+            with get_db_connection() as conn:
+                c = conn.cursor()
+                c.execute('SELECT username, first_name, last_name, role FROM users WHERE username = ?', (user,))
+                row = c.fetchone()
+                if row:
+                    user = {
+                        'username': row[0],
+                        'first_name': row[1],
+                        'last_name': row[2],
+                        'role': row[3]
+                    }
+                else:
+                    user = None
         except Exception:
             user = None
         return dict(current_user=user)

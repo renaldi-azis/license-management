@@ -6,8 +6,34 @@
 
 
 <!-- Users Table -->
- 
-
-
+<div class="table-container">
+    <div class="table-header">
+        <div class="table-title">Manage Users</div>
+        <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal">
+            <i class="fas fa-plus"></i> Add User
+        </button> -->
+    </div>
+    <div class="table-responsive">
+        <table class="table" id="users-table">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Filled by JS -->
+            </tbody>
+        </table>
+    </div>
+    <!-- Users Pagination -->
+    <nav>
+        <ul class="pagination justify-content-center" id="users-pagination">
+            <!-- Filled by JS -->
+        </ul>
+    </nav>
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 {% endblock %}
