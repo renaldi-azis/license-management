@@ -1,3 +1,4 @@
+from flask import current_app
 from flask_recaptcha import ReCaptcha
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
