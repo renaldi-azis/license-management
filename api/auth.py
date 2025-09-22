@@ -14,7 +14,7 @@ bp = Blueprint('auth', __name__)
 def register():
     if request.method == 'POST':
         data = request.get_json()
-        username, password = data['username'], data['password']
+        username, password , firstname, lastname = data['username'], data['password'], data['firstname'], data['lastname']
         
         with get_db_connection() as conn:
             c = conn.cursor()
@@ -23,8 +23,8 @@ def register():
             if c.fetchone()[0] == 0:
                 hashed_pw = generate_password_hash(password)
                 c.execute(
-                    'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-                    (username, hashed_pw, 'admin')
+                    'INSERT INTO users (username, password, first_name, last_name ,role) VALUES (?, ?, ?, ?, ?)',
+                    (username, hashed_pw, firstname, lastname, 'admin')
                 )
                 conn.commit()
                 return jsonify({"result":"success"}), 201
@@ -79,6 +79,22 @@ def login():
 @jwt_required()
 def get_current_user():
     current_user = get_jwt_identity()
+    # find user by username
+    with get_db_connection() as conn:
+        c = conn.cursor()
+        c.execute('SELECT username, first_name, last_name, role FROM users WHERE username = ?', (current_user,))
+        user = c.fetchone()
+        if user:
+            current_user = {
+                'username': user[0],
+                'first_name': user[1],
+                'last_name': user[2],
+                'role': user[3]
+            }
+        else:
+            return jsonify({'error': 'User not found'}), 404
+    if(current_user is None):
+        current_user = get_jwt_identity()
     return jsonify({'user': current_user})
 
 @bp.route('/logout', methods=['GET', 'POST'])

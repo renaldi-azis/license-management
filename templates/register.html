@@ -36,6 +36,29 @@
                         <input type="text" name="username" id="username" class="form-control" placeholder="Choose a username" required>
                     </div>
                 </div>
+
+                <div class="mb-3">
+                    <row>
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="firstname" class="form-label">
+                                <i class="fas fa-user"></i>First Name
+                            </label>
+                            <div class="input-group">
+                                <i class="input-icon fas fa-user"></i>
+                                <input type="text" name="firstname" id="firstname" class="form-control" placeholder="First Name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="lastname" class="form-label">
+                                <i class="fas fa-user"></i>Last Name
+                            </label>
+                            <div class="input-group">
+                                <i class="input-icon fas fa-user"></i>
+                                <input type="text" name="lastname" id="lastname" class="form-control" placeholder="Last Name" required>
+                            </div>
+                        </div>
+                    </row>
+                </div>
                 
                 <div class="mb-3">
                     <label for="password" class="form-label">
@@ -206,11 +229,15 @@
                 // Simulate API call delay
                 const username = document.getElementById('username').value;
                 const password = document.getElementById('password').value;
+                const firstname = document.getElementById('firstname').value;
+                const lastname = document.getElementById('lastname').value;
                 
                 try {
                     const response = await axios.post('/api/auth/register', {
                         username: username,
-                        password: password
+                        password: password,
+                        firstname:firstname,
+                        lastname:lastname
                     });
                     // For demo purposes, simulate successful registration
                     errorDiv.innerHTML = '<div class="alert alert-success">Registration successful! Redirecting to login...</div>';   

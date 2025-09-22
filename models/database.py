@@ -81,6 +81,8 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
+                first_name TEXT,
+                last_name TEXT,
                 role TEXT NOT NULL DEFAULT 'user'
             );
         ''')
