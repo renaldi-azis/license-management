@@ -13,7 +13,7 @@ from services.security import init_recaptcha
 limiter = Limiter(
     get_remote_address,
     app=None,  # Will be set later
-    default_limits=["10 per minute"]  # Example: 10 requests per minute per IP
+    default_limits=["20 per minute"]  # Example: 10 requests per minute per IP
 )
 
 def create_app():

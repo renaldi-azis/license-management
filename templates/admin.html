@@ -74,6 +74,19 @@
                 <!-- Filled by JS -->
             </tbody>
         </table>
+         <!-- No Data State for Products -->
+        <div id="products-no-data" class="no-data" style="display: none;">
+            <div class="no-data-icon">
+                <i class="fas fa-cube"></i>
+            </div>
+            <div class="no-data-title">No Products Found</div>
+            <div class="no-data-description">
+                You haven't created any products yet. Add your first product to start managing licenses.
+            </div>
+            <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
+                <i class="fas fa-plus"></i> Add Your First Product
+            </button> -->
+        </div>        
     </div>
     <!-- Products Pagination -->
     <nav>
@@ -84,7 +97,7 @@
 </div>
 
 <!-- Create License Section -->
-<div class="table-container">
+<div class="table-container" id="create-license">
     <div class="table-header">
         <div class="table-title">Create License</div>
     </div>
@@ -139,6 +152,19 @@
                 <!-- Filled by JS -->
             </tbody>
         </table>
+        <!-- No Data State for Licenses -->
+        <div id="licenses-no-data" class="no-data" style="display: none;">
+            <div class="no-data-icon">
+                <i class="fas fa-key"></i>
+            </div>
+            <div class="no-data-title">No Licenses Found</div>
+            <div class="no-data-description">
+                You haven't created any licenses yet. Create your first license to get started.
+            </div>
+            <!-- <button class="btn btn-primary" onclick="scrollToCreateLicense()">
+                <i class="fas fa-plus-circle"></i> Create Your First License
+            </button> -->
+        </div>
     </div>
     <!-- Licenses Pagination -->
     <nav>

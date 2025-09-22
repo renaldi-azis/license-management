@@ -12,8 +12,6 @@ from utils.validators import validate_json, validate_license_key
 
 bp = Blueprint('licenses', __name__)
 
-
-
 def contains_xss(value):
     # Simple check for script tags or suspicious input
     return bool(re.search(r'<script|onerror=|onload=|javascript:', value, re.IGNORECASE))
@@ -30,15 +28,15 @@ def create_license_route():
         return jsonify({'error': 'Admin access required'}), 403
     
     data = request.get_json()
+    if contains_xss(data.get('user_id', '')):
+        return jsonify({'error': 'Invalid input detected'}), 400
+    
     result = create_license(
         product_id=data['product_id'],
         user_id=data['user_id'],
         expires_days=data.get('expires_days', 30)
     )
     
-    if contains_xss(data.get('user_id', '')):
-        return jsonify({'error': 'Invalid input detected'}), 400
-
     if result['success']:
         return jsonify(result), 201
     return jsonify(result), 400

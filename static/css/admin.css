@@ -1,5 +1,5 @@
  :root {
-    --primary: #6c5ce7;
+    --primary: #7a6af3;
     --primary-dark: #5649c9;
     --secondary: #a29bfe;
     --success: #00b894;
@@ -109,6 +109,34 @@ body {
     padding: 25px;
 }
 
+/* No Data State */
+.no-data {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--gray);
+}
+
+.no-data-icon {
+    font-size: 4rem;
+    color: #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.no-data-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--dark);
+}
+
+.no-data-description {
+    font-size: 1rem;
+    margin-bottom: 25px;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* Header */
 .header {
     background: white;
@@ -174,7 +202,7 @@ body {
     height: 45px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid var(--primary);
+    /* border: 2px solid var(--primary); */
 }
 
 /* Improved logout button */

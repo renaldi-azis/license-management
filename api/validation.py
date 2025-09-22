@@ -17,12 +17,12 @@ def validate_license_route(product_name, license_key):
         ip = request.remote_addr
     
         # Safe suspicious activity check
-        # if suspicious_activity_check(ip):
-        #     return jsonify({
-        #         'valid': False,
-        #         'error': 'Too many requests from this IP. Please try again later.',
-        #         'error_code': 'RATE_LIMITED'
-        #     }), 429
+        if suspicious_activity_check(ip):
+            return jsonify({
+                'valid': False,
+                'error': 'Too many requests from this IP. Please try again later.',
+                'error_code': 'RATE_LIMITED'
+            }), 429
     
         # Perform validation
         result = validate_license(product_name, license_key, ip)
