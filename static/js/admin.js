@@ -60,11 +60,11 @@ async function loadStats() {
         document.getElementById('revoked-licenses').textContent = stats.revoked_licenses;
         
         document.getElementById('active-licenses-percent').textContent = 
-            `${((stats.active_licenses / stats.total_licenses) * 100).toFixed(1)}% of total licenses`;
+            `${((stats.active_licenses / stats.total_licenses) * 100).toFixed(1) | 0}% of total licenses`;
         document.getElementById('expired-licenses-percent').textContent = 
-            `${((stats.expired_licenses / stats.total_licenses) * 100).toFixed(1)}% of total licenses`;
+            `${((stats.expired_licenses / stats.total_licenses) * 100).toFixed(1) | 0}% of total licenses`;
         document.getElementById('revoked-licenses-percent').textContent = 
-            `${((stats.revoked_licenses / stats.total_licenses) * 100).toFixed(1)}% of total licenses`;
+            `${((stats.revoked_licenses / stats.total_licenses) * 100).toFixed(1) | 0}% of total licenses`;
 
         // Update cards with animations
         updateStatsAnimation();
@@ -276,6 +276,7 @@ async function createLicense() {
         // Reset form and reload data
         document.getElementById('user-id').value = '';
         await loadLicenses();
+        await loadProducts();
         await loadStats();
         
     } catch (error) {
@@ -542,19 +543,19 @@ function createStatsModal(title, stats) {
                             <div class="col-md-6">
                                 <h6>License Statistics</h6>
                                 <ul class="list-unstyled">
-                                    <li><strong>Total Licenses:</strong> ${stats.license_stats.total_licenses}</li>
-                                    <li><strong>Active:</strong> ${stats.license_stats.active_licenses}</li>
-                                    <li><strong>Expired:</strong> ${stats.license_stats.expired_licenses}</li>
-                                    <li><strong>Revoked:</strong> ${stats.license_stats.revoked_licenses}</li>
+                                    <li><strong>Total Licenses:</strong> ${stats.license_stats.total_licenses || 0}</li>
+                                    <li><strong>Active:</strong> ${stats.license_stats.active_licenses || 0}</li>
+                                    <li><strong>Expired:</strong> ${stats.license_stats.expired_licenses || 0}</li>
+                                    <li><strong>Revoked:</strong> ${stats.license_stats.revoked_licenses || 0}</li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
                                 <h6>Usage Statistics</h6>
                                 <ul class="list-unstyled">
                                     <li><strong>Average Usage:</strong> ${stats.license_stats.avg_usage?.toFixed(1) || 0}</li>
-                                    <li><strong>Max Usage:</strong> ${stats.license_stats.max_usage}</li>
-                                    <li><strong>Recent Validations:</strong> ${stats.recent_validations}</li>
-                                    <li><strong>Est. Revenue:</strong> $${stats.estimated_revenue}</li>
+                                    <li><strong>Max Usage:</strong> ${stats.license_stats.max_usage || 0}</li>
+                                    <li><strong>Recent Validations:</strong> ${stats.recent_validations || 0}</li>
+                                    <li><strong>Est. Revenue:</strong> $${stats.estimated_revenue || 0}</li>
                                 </ul>
                             </div>
                         </div>
