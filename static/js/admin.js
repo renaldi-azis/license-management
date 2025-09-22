@@ -139,7 +139,7 @@ async function loadUsers(page = 1) {
         }
         else {
             document.getElementById('users-table').style.display = 'table';
-            document.getElementById('users-pagination').style.display = 'block';
+            document.getElementById('users-pagination').style.display = 'flex';
             noDataDiv.style.display = 'none';
         }
         

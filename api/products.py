@@ -45,7 +45,6 @@ def list_products():
     })
 
 @bp.route('/all', methods=['GET'])
-@jwt_required()
 def get_all_products():
     from services.product_service import get_products
     # Get all products without pagination

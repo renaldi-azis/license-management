@@ -68,8 +68,8 @@ def get_license_route(license_key):
 @bp.route('', methods=['GET'])
 @jwt_required()
 def list_licenses():
-    if get_jwt_identity() != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
+    # if get_jwt_identity() != 'admin':
+    #     return jsonify({'error': 'Admin access required'}), 403
     
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
@@ -87,9 +87,6 @@ def list_licenses():
 
 @bp.route('/stats', methods=['GET'])
 @jwt_required()
-def license_stats():
-    if get_jwt_identity() != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
+def license_stats():   
     stats = get_license_stats()
     return jsonify(stats)

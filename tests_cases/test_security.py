@@ -8,8 +8,8 @@ class SecurityTestSuite:
     def __init__(self, base_url="http://localhost:5000"):
         self.base_url = base_url
         self.session = requests.Session()
-        self.test_license_key = "xpp21xAMBqlaxFuk"
-        self.test_product = "Product1"
+        self.test_license_key = "hmbSwIyw3qjCejjq"
+        self.test_product = "MAX_PRODUCT"
         self.admin_username = "admin"
         self.admin_password = "adminpass"  # <-- Set your admin password here
 

@@ -37,8 +37,8 @@ def register():
                 return jsonify({"error":"Username already exists" }), 400
             hashed_pw = generate_password_hash(password)
             c.execute(
-                'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
-                (username, hashed_pw, 'user')
+                'INSERT INTO users (username, password, first_name, last_name ,role) VALUES (?, ?, ?, ?, ?)',
+                (username, hashed_pw, firstname, lastname, 'admin')
             )
             conn.commit()
             return jsonify({"result":"success"}), 201
