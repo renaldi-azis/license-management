@@ -2,6 +2,7 @@ import hashlib
 import secrets
 import base64
 import string
+import re
 
 def hash_license_key(license_key):
     """Create a SHA-256 hash of the license key for secure storage."""
@@ -14,8 +15,7 @@ def generate_license_key(length=16):
 
 def validate_license_format(license_key):
     """Validate license key format."""
-    # Basic format: alphanumeric, 16-32 characters
-    import re
+    # Basic format: alphanumeric, 16-32 characters    
     pattern = r'^[A-Za-z0-9]{16,32}$'
     return bool(re.match(pattern, license_key))
 

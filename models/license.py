@@ -73,10 +73,9 @@ class License:
                     device_id = COALESCE(?, device_id)
                 WHERE key = ?
             ''', (device_id, license_key))
-            
-            # Log usage
-            # License.log_usage(license_key, ip_address, 'validation', 'success')
             conn.commit()
+    
+            License.log_usage(license_key, ip_address, 'validation', 'success')
             
             return {
                 'valid': True,

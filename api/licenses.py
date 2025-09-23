@@ -85,6 +85,28 @@ def list_licenses():
         }
     })
 
+@bp.route('/test/data', methods=['GET'])
+@jwt_required()
+def test_route():
+    # get one active license
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT l.key, p.name AS product_name
+        FROM licenses l
+        JOIN products p ON l.product_id = p.id
+        WHERE l.status = 'active'
+        LIMIT 1
+    """)
+    row = cursor.fetchone()
+    conn.close()
+    if row:
+        return jsonify({
+            'key': row['key'],
+            'product_name': row['product_name']
+        })
+    return jsonify({'error': 'No active licenses found'}), 404
+
 @bp.route('/stats', methods=['GET'])
 @jwt_required()
 def license_stats():   

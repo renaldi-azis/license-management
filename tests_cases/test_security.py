@@ -8,8 +8,8 @@ class SecurityTestSuite:
     def __init__(self, base_url="http://localhost:5000"):
         self.base_url = base_url
         self.session = requests.Session()
-        self.test_license_key = "hmbSwIyw3qjCejjq"
-        self.test_product = "MAX_PRODUCT"
+        self.test_license_key = ""
+        self.test_product = ""
         self.admin_username = "admin"
         self.admin_password = "adminpass"  # <-- Set your admin password here
 
@@ -25,6 +25,15 @@ class SecurityTestSuite:
         token = login_resp.json().get("access_token")
         assert token, "No access token received"
         self.session.headers.update({"Authorization": f"Bearer {token}"})
+
+        # Get Test License Key
+        resp = self.session.get(f"{self.base_url}/api/licenses/test/data")
+        print(resp.json())
+        assert resp.status_code == 200, "Failed to get test license data"
+        data = resp.json()
+        self.test_license_key = data.get("key")
+        self.test_product = data.get("product_name")
+        assert self.test_license_key and self.test_product, "Test license data incomplete"
 
         # Create test product if not exists
         resp = self.session.get(f"{self.base_url}/api/products/all")

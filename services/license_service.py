@@ -1,3 +1,4 @@
+from datetime import datetime
 from models.license import License
 from models.product import Product
 from utils.hash_utils import hash_license_key
@@ -28,6 +29,14 @@ def get_licenses(page=1, per_page=10):
         
         c.execute('SELECT COUNT(*) FROM licenses')
         total = c.fetchone()[0]
+
+        # update licenses expired status
+        c.execute('''
+            UPDATE licenses
+            SET status = 'expired'
+            WHERE expires_at IS NOT NULL AND expires_at < ? AND status != 'revoked'
+        ''', (datetime.now(),))
+        conn.commit()
         
         c.execute('''
             SELECT l.*, p.name as product_name
@@ -36,7 +45,7 @@ def get_licenses(page=1, per_page=10):
             ORDER BY l.created_at DESC
             LIMIT ? OFFSET ?
         ''', (per_page, offset))
-        
+
         licenses = []
         for row in c.fetchall():
             license_data = dict(row)
@@ -119,7 +128,6 @@ def validate_license(product_name, license_key, ip_address, device_id=None):
         return {'valid': False, 'error': 'Product not found'}
 
     product_id = product['id']
-
     # Validate license using License model
     result = License.validate(product_id, license_key, ip_address, device_id)
     return result
