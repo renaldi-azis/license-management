@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 
 class SecurityTestSuite:
-    def __init__(self, base_url="http://localhost:5000"):
+    def __init__(self, base_url="http://103.152.165.248"):
         self.base_url = base_url
         self.session = requests.Session()
         self.test_license_key = ""

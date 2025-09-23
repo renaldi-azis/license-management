@@ -32,6 +32,10 @@ def drop_users_table():
         conn.commit()
 
 def init_db():
+
+    # Drop users table if it exists
+    drop_users_table()
+
     """Initialize the database with tables and indexes."""
     with get_db_connection_context() as conn:
         c = conn.cursor()
