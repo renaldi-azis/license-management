@@ -7,7 +7,7 @@ from config import Config
 from api import auth, licenses, products , validation
 from api.auth import recaptcha
 from models.database import init_db
-from services.rate_limiter import init_limiter
+from services.rate_limiter import limiter
 from services.rate_limiter import redis_client
 from services.security import init_recaptcha
 from services.rate_limiter import suspicious_activity_check
@@ -17,8 +17,12 @@ def create_app():
     app = Flask(__name__)
     
     app.config.from_object(Config)
-    # limiter.init_app(app)
+    limiter.init_app(app)
     recaptcha.init_app(app)
+
+    # Initialize rate limiter (requires app context)
+    # init_limiter(app)
+
     # Register error handlers first
     @app.errorhandler(404)
     def not_found(error):
@@ -36,8 +40,7 @@ def create_app():
     with app.app_context():
         init_db()
     
-    # Initialize rate limiter (requires app context)
-    init_limiter(app)
+    
     
     # Initialize reCAPTCHA
     init_recaptcha(app)

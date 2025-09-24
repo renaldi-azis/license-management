@@ -42,9 +42,9 @@ def login():
     if request.method == 'POST':
         data = request.get_json()
         username, password, credit_number, machine_code= data['username'], data['password'], data['credit_number'], data['machine_code']
-        if not recaptcha.verify():
-            flash("reCAPTCHA validation failed. Please try again.", "danger")
-            return render_template("login.html")
+        # if not recaptcha.verify():
+        #     flash("reCAPTCHA validation failed. Please try again.", "danger")
+        #     return render_template("login.html")
         # get role by username & password
         with get_db_connection() as conn:
             c = conn.cursor()

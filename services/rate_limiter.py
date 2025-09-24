@@ -8,6 +8,8 @@ from contextlib import contextmanager
 import time
 import json
 
+limiter = Limiter(key_func=get_remote_address)
+
 # Global Redis client (initialized after app creation)
 redis_client = None
 
@@ -17,12 +19,11 @@ def init_limiter(app):
     
     # Initialize Redis client
     redis_client = redis.from_url(app.config['REDIS_URL'], decode_responses=True)
-    
-    limiter = Limiter(
-        key_func=get_remote_address,
-        default_limits=["3600 per hour", "60 per minute"],  # Default limits
-        storage_uri= app.config['RATELIMIT_STORAGE_URL']  # Will set later
-    )
+    # limiter = Limiter(
+    #     key_func=get_remote_address,
+    #     default_limits=["3600 per hour", "60 per minute"],  # Default limits    
+    #     storage_uri=app.config['RATELIMIT_STORAGE_URL']
+    # )   
 
     # Test Redis connection
     try:
@@ -170,40 +171,43 @@ def is_ip_blocked(ip_address):
 # Decorator for rate-limited routes
 def rate_limited(limit="60/minute"):
     """Decorator to apply rate limiting to routes."""
-    def decorator(f):
-        from functools import wraps
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not has_request_context():
-                return f(*args, **kwargs)
+    if(limiter is None):
+        raise Exception("Limiter not initialized. Call init_limiter(app) after app creation.")
+    return limiter.limit(limit)
+    # def decorator(f):
+    #     from functools import wraps
+    #     @wraps(f)
+    #     def decorated_function(*args, **kwargs):
+    #         if not has_request_context():
+    #             return f(*args, **kwargs)
             
-            ip = get_remote_address()
+    #         ip = get_remote_address()
             
-            # Check if IP is blocked
-            if is_ip_blocked(ip):
-                return current_app.response_class(
-                    json.dumps({
-                        "error": "IP address blocked due to previous abuse",
-                        "retry_after": 3600
-                    }),
-                    status=403,
-                    mimetype='application/json'
-                )
+    #         # Check if IP is blocked
+    #         if is_ip_blocked(ip):
+    #             return current_app.response_class(
+    #                 json.dumps({
+    #                     "error": "IP address blocked due to previous abuse",
+    #                     "retry_after": 3600
+    #                 }),
+    #                 status=403,
+    #                 mimetype='application/json'
+    #             )
             
-            # Check suspicious activity
-            if suspicious_activity_check(ip):
-                # Record as suspicious
-                record_suspicious_activity(ip, "high_request_rate", 50)
+    #         # Check suspicious activity
+    #         if suspicious_activity_check(ip):
+    #             # Record as suspicious
+    #             record_suspicious_activity(ip, "high_request_rate", 50)
                 
-                return current_app.response_class(
-                    json.dumps({
-                        "error": "Too many requests. Please try again later.",
-                        "retry_after": 300
-                    }),
-                    status=429,
-                    mimetype='application/json'
-                )
+    #             return current_app.response_class(
+    #                 json.dumps({
+    #                     "error": "Too many requests. Please try again later.",
+    #                     "retry_after": 300
+    #                 }),
+    #                 status=429,
+    #                 mimetype='application/json'
+    #             )
             
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
+    #         return f(*args, **kwargs)
+    #     return decorated_function
+    # return decorator

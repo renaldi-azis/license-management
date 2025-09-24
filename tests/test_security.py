@@ -28,7 +28,6 @@ class SecurityTestSuite:
 
         # Get Test License Key
         resp = self.session.get(f"{self.base_url}/api/licenses/test/data")
-        print(resp.json())
         assert resp.status_code == 200, "Failed to get test license data"
         data = resp.json()
         self.test_license_key = data.get("key")
@@ -90,9 +89,8 @@ class SecurityTestSuite:
                 },
                 headers=headers
             )
-            print(response.json())
+            
             # Accept 400, 401, or 422 as valid rejections
-            print(response.json())
             assert response.status_code in [400, 401, 422], \
                 f"XSS input accepted: {input_val[:20]}... - Status: {response.status_code}"
             print(f"✅ XSS blocked: {input_val[:20]}...")
