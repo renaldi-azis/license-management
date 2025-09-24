@@ -39,16 +39,19 @@ mkdir -p "$BACKUP_DIR" || error "Failed to create backup directory"
 
 # Stop application for consistent backup
 info "Stopping license server..."
-systemctl stop license-server 2>/dev/null || true
+if systemctl is-active --quiet license-server; then
+    systemctl stop license-server || error "Failed to stop license server"
+else
+    info "License server is not running"
+fi
 
-# Backup database
+# Backup SQLite database(s)
 DB_FILE="$APP_DIR/data/licenses.db"
 if [ -f "$DB_FILE" ]; then
     info "Backing up database..."
     cp "$DB_FILE" "$BACKUP_DIR/licenses_$DATE.db" || error "Database backup failed"
-    
     # Verify backup
-    if sqlite3 "$BACKUP_DIR/licenses_$DATE.db" "PRAGMA integrity_check;" > /dev/null 2>&1; then
+    if sqlite3 "$BACKUP_DIR/licenses_$DATE.db" "PRAGMA integrity_check;" | grep -q 'ok'; then
         success "Database backup completed: $(du -h "$BACKUP_DIR/licenses_$DATE.db" | cut -f1)"
     else
         error "Database backup integrity check failed"
@@ -58,29 +61,38 @@ else
 fi
 
 # Backup Redis data (if using Redis)
-if command -v redis-cli >/dev/null 2>&1; then
+if command -v redis-cli >/dev/null 2>&1 && pgrep redis-server >/dev/null 2>&1; then
     info "Backing up Redis data..."
     redis-cli --rdb "$BACKUP_DIR/redis_$DATE.rdb" 2>/dev/null || {
         info "Redis backup failed or not needed"
     }
+else
+    info "Redis is not running or not installed, skipping Redis backup"
 fi
 
-# Backup configuration (exclude secrets)
+# Backup configuration (exclude secrets and unnecessary files)
 info "Backing up configuration..."
 tar -czf "$BACKUP_DIR/config_$DATE.tar.gz" \
     --exclude=".env" \
     --exclude="venv" \
     --exclude="data" \
     --exclude="logs" \
+    --exclude="__pycache__" \
+    --exclude="*.pyc" \
     -C "$APP_DIR" . 2>/dev/null || {
     info "Configuration backup skipped (no changes)"
 }
 
 # Backup logs (last 7 days)
-info "Backing up recent logs..."
-find "$APP_DIR/logs" -name "*.log" -mtime -7 -exec tar -rf "$BACKUP_DIR/logs_$DATE.tar.gz" {} + 2>/dev/null || {
-    info "No recent logs to backup"
-}
+LOGS_DIR="$APP_DIR/logs"
+if [ -d "$LOGS_DIR" ]; then
+    info "Backing up recent logs..."
+    find "$LOGS_DIR" -name "*.log" -mtime -7 -print0 | xargs -0 tar -czf "$BACKUP_DIR/logs_$DATE.tar.gz" 2>/dev/null || {
+        info "No recent logs to backup"
+    }
+else
+    info "Logs directory not found, skipping logs backup"
+fi
 
 # Start application
 info "Starting license server..."
@@ -94,6 +106,7 @@ find "$BACKUP_DIR" -name "licenses_*.db" -mtime +7 -delete 2>/dev/null || true
 find "$BACKUP_DIR" -name "redis_*.rdb" -mtime +7 -delete 2>/dev/null || true
 find "$BACKUP_DIR" -name "config_*.tar.gz" -mtime +7 -delete 2>/dev/null || true
 find "$BACKUP_DIR" -name "logs_*.tar.gz" -mtime +7 -delete 2>/dev/null || true
+find "$BACKUP_DIR" -name "manifest_*.txt" -mtime +7 -delete 2>/dev/null || true
 
 # Create manifest
 info "Creating backup manifest..."
@@ -122,4 +135,3 @@ if command -v rclone >/dev/null 2>&1; then
     rclone sync "$BACKUP_DIR" remote:license-backups/ --progress 2>/dev/null || {
         info "Cloud upload failed, backup stored locally"
     }
-fi

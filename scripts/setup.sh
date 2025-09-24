@@ -2,7 +2,7 @@
 
 set -e
 
-echo "🚀 Setting up License Management Server..."
+echo "Setting up License Management Server..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -48,9 +48,9 @@ if [ ! -f .env ]; then
     echo -e "${GREEN}Please edit .env file with your configuration${NC}"
 fi
 
-# Initialize database
-echo -e "${YELLOW}Initializing database...${NC}"
-python -c "from models.database import init_db; init_db()"
+# Initialize database using migration scripts
+echo -e "${YELLOW}Initializing database with migrations...${NC}"
+bash scripts/migrate.sh
 
 # Create logs directory
 mkdir -p logs
@@ -58,8 +58,8 @@ mkdir -p logs
 # Create admin user
 echo -e "${YELLOW}Setting up admin user...${NC}"
 python -c "
-from services.security import verify_admin_credentials
-if not verify_admin_credentials('admin', 'adminpass'):
+from services.security import verify_credentials
+if not verify_credentials('admin', 'adminpass'):
     from services.user_service import create_admin_user
     create_admin_user()
 else:
@@ -72,21 +72,20 @@ if grep -q "REDIS_URL=" .env; then
     python -c "
 import os
 from dotenv import load_dotenv
-import redis
-
-load_dotenv()
 try:
+    import redis
+    load_dotenv()
     r = redis.from_url(os.getenv('REDIS_URL'))
     r.ping()
-    print('✅ Redis connection successful')
+    print('Redis connection successful')
 except Exception as e:
-    print('⚠️  Redis connection failed:', e)
+    print('Redis connection failed:', e)
     print('Rate limiting will be disabled')
 "
 fi
 
 # Success message
-echo -e "${GREEN}✅ Setup completed successfully!${NC}"
+echo -e "${GREEN}Setup completed successfully!${NC}"
 echo ""
 echo "Next steps:"
 echo "1. Edit .env file: nano .env"
@@ -97,4 +96,4 @@ echo "5. Test API: curl -X POST http://localhost:5000/api/auth/login \\"
 echo "   -H 'Content-Type: application/json' \\"
 echo "   -d '{\"username\":\"admin\",\"password\":\"adminpass\"}'"
 echo ""
-echo "For production deployment, see docs/DEPLOYMENT.md"
+echo "For
