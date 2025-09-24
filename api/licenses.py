@@ -1,4 +1,6 @@
-from flask import Blueprint, request, jsonify
+import pandas as pd
+import io
+from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
 
@@ -153,4 +155,30 @@ def test_route():
     return jsonify({'error': 'No active licenses found'}), 404
 
 
+@bp.route('/backup', methods=['GET'])
+@jwt_required()
+def backup_licenses():
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
 
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM licenses")
+    rows = cursor.fetchall()
+    conn.close()
+
+    licenses = [dict(row) for row in rows]
+    df = pd.DataFrame(licenses)
+    output = io.BytesIO()
+    # Use ExcelWriter, then close and seek
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Licenses')
+    output.seek(0)
+
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name='licenses_backup.xlsx'
+    )

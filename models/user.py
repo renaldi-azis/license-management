@@ -8,7 +8,7 @@ class User:
             c = conn.cursor()
             try:
                 c.execute(
-                    'INSERT INTO users (username, password_hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)',
+                    'INSERT INTO users (username, password, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)',
                     (username, password_hash, first_name, last_name, role)
                 )
                 conn.commit()

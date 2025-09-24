@@ -331,6 +331,26 @@ async function createLicense() {
     }
 }
 
+async function backupLicenses() {
+    try {
+        const response = await axios.get(`${API_BASE}/licenses/backup`, {
+            responseType: 'blob'
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `licenses_backup_${new Date().toISOString().slice(0,10)}.xlsx`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showAlert('License backup downloaded', 'success');
+        
+    } catch (error) {
+        showAlert(error.response?.data?.error || 'Failed to backup licenses', 'danger');
+    }
+}
+
 // Create new product
 async function createProduct() {
     const name = document.getElementById('product-name').value;
@@ -406,13 +426,13 @@ function copyLicenseKey(key) {
         tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-        alert('License key copied!');
+        showAlert('License key copied', 'success');
         return;
     }
     if (navigator.clipboard) {
         navigator.clipboard.writeText(key)
-            .then(() => alert('License key copied!'))
-            .catch(err => alert('Failed to copy license key.'));
+            .then(() => showAlert('License key copied', 'success'))
+            .catch(err => showAlert('Failed to copy license key', 'warning'))
     } else {
         // Fallback for older browsers
         const tempInput = document.createElement('input');
@@ -421,7 +441,7 @@ function copyLicenseKey(key) {
         tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-        alert('License key copied!');
+        showAlert('License key copied', 'success');
     }
 }
 

@@ -1,57 +1,82 @@
+# License Management Server
 
-Description : 
+## Overview
 
-I need to build a license management server that can connect via API. The goal is to easily integrate it into an application using Python requests to verify user licenses.
+This project is a secure license management server with a RESTful API, designed for easy integration with Python applications. It supports license creation, validation, revocation, usage logging, and anti-abuse mechanisms. The server can manage licenses for multiple software products and includes a web-based admin dashboard.
 
-Detailed Requirements:
+---
 
-- Develop and configure a license server.
+## Features
 
-- Provide API support to:
-    Create / revoke / validate license keys.
-    Manage license status (expired, blocked, active).
-    Log usage history and requests.
+- **API Endpoints:**
+  - Create, revoke, and validate license keys
+  - Manage license status: active, expired, blocked
+  - Log usage history and requests
+  - Search licenses by account name or license value
 
-    - Easy integration with Python (simple request calls).
+- **Integration:**
+  - Simple Python requests for license verification
+  - Supports multiple software products
 
-    - High security, resistant to cracking or bypassing.
+- **Security:**
+  - Resistant to cracking and bypassing
+  - Rate limiting and token-based authentication to prevent spam and abuse
 
-    - Anti-spam mechanism (e.g., rate limiting, token-based authentication).
+- **Admin Dashboard:**
+  - Manage licenses and accounts via web panel
+  - View license details and usage logs
+  - Permanently delete licenses
+  - Export license data to Excel
 
-    - A dashboard or at least a simple way to manage license keys (web/admin panel preferred).
+---
 
-Requirements (Message): 
+## Special Notes
 
- - Yes i am currently using app script and encountered a case where bad guys continuously send data through api, this leads to google marking it as spam and client requests cannot be fulfilled, can you handle this?
+- **Default Accounts:**  
+  Registration is disabled. Five default accounts are created:
+    - `richtoolsmmo01` — `RichTools2025!`
+    - `richtoolsmmo_backup` — `RichBackup21#`
+    - `huytoolsmmo01` — `HuyTools2025!`
+    - `huytoolsmmo_admin` — `HuyAdmin#77`
+    - `richtoolsmmo.huy` — `RtHuyHome99`
 
- - If using server to manage license, can avoid "quota limit" error bro?
+- **License Creation:**  
+  When creating a license, you must enter:
+    - `UserID`
+    - `Credit Number` (optional; if not entered, API returns `None`)
+    - `Machine Code`
 
- - 1 more thing, I have multiple software, can the server manage licenses for those software? Or can 1 server only be used for 1 single software?
+- **License Actions:**  
+  - Copy and details buttons work in the dashboard; details are shown for selected licenses.
+  - Search box allows searching by account name or license value.
+  - Delete button allows permanent removal of licenses.
+  - Backup button exports license data to Excel.
 
+---
 
-Phuong Nguyen 10:03 PM
+## Anti-Spam & Quota
 
- - i checked the website, i need to edit as follows:
- - 1. remove the register button, create me 5 default accounts as follows:
+- Rate limiting and authentication prevent abuse and spam, avoiding issues like Google API quota errors.
 
+---
 
- richtoolsmmo01 — RichTools2025!
- richtoolsmmo_backup — RichBackup21#
- huytoolsmmo01 — HuyTools2025!
- huytoolsmmo_admin — HuyAdmin#77
- richtoolsmmo.huy — RtHuyHome99
+## Running Steps
 
+1. **Initialize Database:**
+   ```sh
+   python -c "from models.database import drop_users_table; drop_users_table()"
+   python -c "from models.database import insert_default_users; insert_default_users()"
+   python -c "from models.database import init_db; init_db()"
+   ```
 
- - 2. in addition to entering 'UserID', add values ​​(credit number, machine code)
- - 3. with the value (credit number), if i do not enter, then the API result returns with this value is None
+2. **Start Server:**
+   ```sh
+   flask run --host=0.0.0.0 --port=5000
+   ```
 
-- license 'copy' button and 'details' button in created account doesn't work when selecting in 'Licenses', other than 'Dashboard' it can show 'details'
-- add search box so I can search license by account name or license value
+---
 
-- when deleting a license, can I add a button to permanently delete that license if I want?
-- I want to add a backup button to an excel file too
+## Contact
 
-- Running Steps
-
-database_init : python -c "from models.database import init_db; init_db()"
-server_run : flask run --host=0.0.0.0 --port=5000
+For questions or support, contact:  
+Phuong

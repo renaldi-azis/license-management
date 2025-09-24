@@ -590,7 +590,7 @@ body {
     }
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1110px) {
     .sidebar {
         width: 80px;
         overflow: hidden;
