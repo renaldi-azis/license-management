@@ -36,6 +36,3 @@ logs
 # OS
 .DS_Store
 Thumbs.db
-
-#local test cases
-/tests_cases/

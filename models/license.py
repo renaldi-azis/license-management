@@ -58,20 +58,7 @@ class License:
                     c.execute("UPDATE licenses SET status = 'expired' WHERE key = ?", (license_key,))
                     conn.commit()
                     return {'valid': False, 'error': 'License expired'}
-            
-            # Check device limit
-            if device_id and license['device_id'] and license['device_id'] != device_id:
-                return {'valid': False, 'error': 'Device limit exceeded'}
-            
-            # Update usage
-            c.execute('''
-                UPDATE licenses 
-                SET usage_count = usage_count + 1, 
-                    device_id = COALESCE(?, device_id)
-                WHERE key = ?
-            ''', (device_id, license_key))
-            conn.commit()
-    
+                
             License.log_usage(license_key, ip_address, 'validation', 'success')
             
             return {

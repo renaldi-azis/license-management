@@ -5,13 +5,13 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 
 class SecurityTestSuite:
-    def __init__(self, base_url="http://103.152.165.248"):
+    def __init__(self, base_url="http://localhost:5000"):
         self.base_url = base_url
         self.session = requests.Session()
         self.test_license_key = ""
         self.test_product = ""
-        self.admin_username = "admin"
-        self.admin_password = "adminpass"  # <-- Set your admin password here
+        self.admin_username = "richtoolsmmo01"
+        self.admin_password = "RichTools2025!"  # <-- Set your admin password here
 
     def setup_security_test(self):
         print("🔧 Setting up security test environment...")
@@ -19,7 +19,7 @@ class SecurityTestSuite:
         # Login as admin and set JWT token
         login_resp = self.session.post(
             f"{self.base_url}/api/auth/login",
-            json={"username": self.admin_username, "password": self.admin_password}
+            json={"username": self.admin_username, "password": self.admin_password, 'credit_number': '4111111111111111', 'machine_code': 'test-machine-id'}
         )
         assert login_resp.status_code == 200, "Login failed for security test"
         token = login_resp.json().get("access_token")

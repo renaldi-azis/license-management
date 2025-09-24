@@ -26,10 +26,8 @@ fi
 
 # Create admin user if needed
 python -c "
-from services.security import verify_admin_credentials
-if not verify_admin_credentials('admin', 'adminpass'):
-    from services.user_service import create_admin_user
-    create_admin_user()
+from models.database import insert_default_users;
+insert_default_users()
 "
 
 # Start the application

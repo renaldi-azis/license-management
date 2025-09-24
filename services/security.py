@@ -11,7 +11,7 @@ def init_recaptcha(app):
     if Config.RECAPTCHA_SITE_KEY and Config.RECAPTCHA_SECRET_KEY:
         recaptcha = ReCaptcha(app)
 
-def verify_admin_credentials(hashed_password, password):
+def verify_credentials(hashed_password, password):
     """Verify credentials."""
     # verify credientials using username and password
     if(hashed_password == None or password == None):

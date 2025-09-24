@@ -13,7 +13,7 @@ redis_client = None
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["1000 per hour", "40 per minute"],  # Default limits
+    default_limits=["1000 per hour", "60 per minute"],  # Default limits
     storage_uri=None  # Will set later
 )
 

@@ -1,14 +1,10 @@
 from datetime import timedelta
 from flask import Blueprint, flash, render_template, request, jsonify, make_response, redirect, url_for
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from werkzeug.security import check_password_hash, generate_password_hash
-
-from models.database import get_db_connection
-
 from services.users_service import get_role_by_username
-from services.security import verify_admin_credentials
+from services.security import (hash_password, verify_credentials)
 from services.users_service import (create_user, get_users_count, get_users, update_user, remove_user)
-from utils.validators import validate_json
+from models.database import get_db_connection
 
 bp = Blueprint('auth', __name__)
 
@@ -23,7 +19,7 @@ def register():
         if get_users_count() == 0:
             # If no users exist, create the first user as admin
             role = 'admin'
-        hashed_pw = generate_password_hash(password)
+        hashed_pw = hash_password(password)
         create_user(
             username=username,
             password_hash=hashed_pw,
@@ -47,7 +43,7 @@ def login():
             c = conn.cursor()
             c.execute('SELECT password, role FROM users WHERE username = ?', (username,))
             row = c.fetchone()
-            if not row or not check_password_hash(row[0], password):
+            if not row or not verify_credentials(row[0], password):
                 return jsonify({'error': 'Invalid credentials'}), 401
             if row:
                 expected_password_hash = row[0]
@@ -60,7 +56,7 @@ def login():
             else:
                 expected_password_hash = None      
 
-        if verify_admin_credentials(expected_password_hash, password):
+        if verify_credentials(expected_password_hash, password):
             access_token = create_access_token(
                 identity= username,  # Use username as identity
                 expires_delta=timedelta(days=1)
