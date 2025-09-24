@@ -13,7 +13,7 @@ redis_client = None
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["1000 per hour", "60 per minute"],  # Default limits
+    default_limits=["3600 per hour", "60 per minute"],  # Default limits
     storage_uri=None  # Will set later
 )
 
@@ -168,7 +168,7 @@ def is_ip_blocked(ip_address):
         return False
 
 # Decorator for rate-limited routes
-def rate_limited(limit="100/hour"):
+def rate_limited(limit="60/minute"):
     """Decorator to apply rate limiting to routes."""
     def decorator(f):
         from functools import wraps
@@ -201,38 +201,6 @@ def rate_limited(limit="100/hour"):
                         "retry_after": 300
                     }),
                     status=429,
-                    mimetype='application/json'
-                )
-            
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
-
-# Admin-only rate limiting
-def admin_rate_limited(limit="10/minute"):
-    """Enhanced rate limiting for admin routes."""
-    def decorator(f):
-        from functools import wraps
-        @wraps(f)
-        @rate_limited("50/hour")  # Base limit
-        def decorated_function(*args, **kwargs):
-            if not has_request_context():
-                return f(*args, **kwargs)
-            
-            from flask_jwt_extended import get_jwt_identity
-            
-            try:
-                current_user = get_jwt_identity()
-                if get_role_by_username(current_user) != 'admin':
-                    return current_app.response_class(
-                        json.dumps({"error": "Admin access required"}),
-                        status=403,
-                        mimetype='application/json'
-                    )
-            except:
-                return current_app.response_class(
-                    json.dumps({"error": "Authentication required"}),
-                    status=401,
                     mimetype='application/json'
                 )
             
