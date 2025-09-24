@@ -1,11 +1,11 @@
 import datetime
 from flask import Flask, redirect, render_template, url_for
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
-from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 from config import Config
 from api import auth, licenses, products , validation
+from api.auth import recaptcha
 from models.database import init_db
 from services.rate_limiter import init_limiter
 from services.rate_limiter import redis_client
@@ -15,9 +15,10 @@ from services.rate_limiter import suspicious_activity_check
 
 def create_app():
     app = Flask(__name__)
-    # limiter.init_app(app)
-    app.config.from_object(Config)
     
+    app.config.from_object(Config)
+    # limiter.init_app(app)
+    recaptcha.init_app(app)
     # Register error handlers first
     @app.errorhandler(404)
     def not_found(error):

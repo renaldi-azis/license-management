@@ -9,6 +9,7 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///licenses.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     REDIS_URL = os.environ.get('REDIS_URL') or 'redis://localhost:6379'
+    RATELIMIT_STORAGE_URL = os.environ.get('RATELIMIT_STORAGE_URL') or "redis://localhost:6379/0"
     RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY')
     RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
@@ -18,3 +19,5 @@ class Config:
     JWT_TOKEN_LOCATION = ['cookies']
     JWT_ACCESS_COOKIE_NAME = 'access_token_cookie'
     JWT_COOKIE_CSRF_PROTECT = False  # For testing; enable for production
+    RECAPTCHA_SITE_KEY = "hobit-321"
+    RECAPTCHA_SECRET_KEY = "hobit-321"

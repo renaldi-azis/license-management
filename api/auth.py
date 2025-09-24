@@ -1,6 +1,7 @@
 from datetime import timedelta
 from flask import Blueprint, flash, render_template, request, jsonify, make_response, redirect, url_for
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_recaptcha import ReCaptcha
 from services.rate_limiter import rate_limited
 from services.users_service import get_role_by_username
 from services.security import (hash_password, verify_credentials)
@@ -8,6 +9,7 @@ from services.users_service import (create_user, get_users_count, get_users, upd
 from models.database import get_db_connection
 
 bp = Blueprint('auth', __name__)
+recaptcha = ReCaptcha()  # or pass your app if not using factory
 
 # Update registration logic to set role
 @bp.route('/register', methods=['GET', 'POST'])
@@ -37,10 +39,12 @@ def register():
 @bp.route('/login', methods=['POST','GET'])
 @rate_limited(limit='10 per minute')  # Limit login attempts
 def login():
-    if request.method == 'POST':        
+    if request.method == 'POST':
         data = request.get_json()
         username, password, credit_number, machine_code= data['username'], data['password'], data['credit_number'], data['machine_code']
-        role = None
+        if not recaptcha.verify():
+            flash("reCAPTCHA validation failed. Please try again.", "danger")
+            return render_template("login.html")
         # get role by username & password
         with get_db_connection() as conn:
             c = conn.cursor()

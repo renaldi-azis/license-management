@@ -109,8 +109,7 @@ class SecurityTestSuite:
                 response = requests.get(
                    f"{self.base_url}/api/validate/{self.test_product}/{self.test_license_key}",
                     timeout=5
-                )
-                
+                )                
                 return response.status_code
             except:
                 return 500

@@ -11,12 +11,6 @@ import json
 # Global Redis client (initialized after app creation)
 redis_client = None
 
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["3600 per hour", "60 per minute"],  # Default limits
-    storage_uri=None  # Will set later
-)
-
 def init_limiter(app):
     """Initialize Flask-Limiter with Redis backend."""
     global redis_client
@@ -24,6 +18,12 @@ def init_limiter(app):
     # Initialize Redis client
     redis_client = redis.from_url(app.config['REDIS_URL'], decode_responses=True)
     
+    limiter = Limiter(
+        key_func=get_remote_address,
+        default_limits=["3600 per hour", "60 per minute"],  # Default limits
+        storage_uri= app.config['RATELIMIT_STORAGE_URL']  # Will set later
+    )
+
     # Test Redis connection
     try:
         redis_client.ping()
