@@ -418,7 +418,7 @@ async function removeLicense(licenseKey) {
 
 // Copy license key to clipboard
 function copyLicenseKey(key) {
-    if(navigator.clipboard.writeText === undefined){
+    if(navigator.clipboard === undefined){
         // Fallback for older browsers and HTTP
         const tempInput = document.createElement('input');
         tempInput.value = key;
