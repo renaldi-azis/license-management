@@ -2,7 +2,6 @@ from config import Config
 import sqlite3
 import os
 from contextlib import contextmanager
-from datetime import datetime
 
 def get_db_connection():
     db_uri = Config.SQLALCHEMY_DATABASE_URI

@@ -11,8 +11,7 @@ class License:
             license_key = generate_license_key()
         
         expires_at = datetime.now() + timedelta(days=expires_days)
-        # hashed_key = hash_license_key(license_key)
-        
+          
         with get_db_connection() as conn:
             c = conn.cursor()
             try:
