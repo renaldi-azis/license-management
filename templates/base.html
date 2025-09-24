@@ -48,7 +48,7 @@
                     <!-- <span class="credit-number">Credit: {{ current_user['credit_number']|default('N/A') }}</span>
                     <span class="machine-code">Machine: {{ current_user['machine_code']|default('N/A') }}</span> -->
                 </div>
-                <a class="logout-btn" href="/api/auth/logout">
+                <a class="logout-btn" onclick="logoutAndRedirect()" >
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Logout</span>
                 </a>

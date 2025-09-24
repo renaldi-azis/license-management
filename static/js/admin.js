@@ -672,29 +672,34 @@ function createStatsModal(title, stats) {
     return new bootstrap.Modal(document.getElementById('statsModal'));
 }
 
-function logoutAndRedirect() {
+async function logoutAndRedirect() {
+
     // Remove token from localStorage
     localStorage.removeItem('token');
     // Redirect to /admin (or your desired page)
+    
+    // const response = await axios.get(`${API_BASE}/auth/logout`);
     window.location.href = '/login';
 }
 
 //Enter key event for searching licenses
-document.getElementById('search-license-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const query = e.target.value.trim();
-        loadLicenses(1, query);
-    }
-});
+if(document.getElementById('search-license-input'))
+    document.getElementById('search-license-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = e.target.value.trim();
+            loadLicenses(1, query);
+        }
+    });
 
-document.getElementById('search-product-input').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const query = e.target.value.trim();
-        loadProducts(1, query);
-    }
-});
+if(document.getElementById('search-product-input'))
+    document.getElementById('search-product-input').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const query = e.target.value.trim();
+            loadProducts(1, query);
+        }
+    });
 
 // Attach to logout link if using JS navigation
 document.addEventListener('DOMContentLoaded', function() {
