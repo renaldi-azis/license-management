@@ -1,8 +1,8 @@
-# 🎫 License Management API Documentation
+# License Management API Documentation
 
 ---
 
-## 🌐 Base URL
+## Base URL
 
 ```
 https://your-license-server.com/api
@@ -10,7 +10,7 @@ https://your-license-server.com/api
 
 ---
 
-## 🔐 Authentication
+## Authentication
 
 <details>
 <summary><strong>Login</strong> <code>POST /auth/login</code></summary>
@@ -55,7 +55,7 @@ https://your-license-server.com/api
 
 ---
 
-## 🛒 Products
+## Products
 
 <details>
 <summary><strong>Create Product</strong> <code>POST /products</code> <em>(Admin only)</em></summary>
@@ -146,7 +146,7 @@ https://your-license-server.com/api
 
 ---
 
-## 🔑 Licenses
+## Licenses
 
 <details>
 <summary><strong>Create License</strong> <code>POST /licenses</code> <em>(Admin only)</em></summary>
@@ -226,7 +226,7 @@ https://your-license-server.com/api
 
 ---
 
-## ✅ License Validation
+## License Validation
 
 <details>
 <summary><strong>Validate License</strong> <code>GET /validate/{product_name}/{license_key}</code></summary>
@@ -258,11 +258,11 @@ https://your-license-server.com/api
 
 ---
 
-## 🚦 Rate Limiting
+## Rate Limiting
 
-- **1000 requests per day per IP**
-- **100 requests per hour per IP**
-- **10 requests per minute for admin actions**
+- 1000 requests per day per IP
+- 100 requests per hour per IP
+- 10 requests per minute for admin actions
 
 **Rate limited response (429):**
 ```json
@@ -273,7 +273,7 @@ https://your-license-server.com/api
 
 ---
 
-## ⚠️ Error Responses
+## Error Responses
 
 | Status | Example Response |
 |--------|-----------------|

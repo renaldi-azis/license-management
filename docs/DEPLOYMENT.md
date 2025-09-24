@@ -1,17 +1,16 @@
-# 🚀 Deployment Guide
+# Deployment Guide
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Python** 3.8+
-- **Docker** (recommended for production)s
 - **Redis** 6+ (for rate limiting)
 - **Git**
 
 ---
 
-## 🛠️ Local Development
+## Local Development
 
 <details>
 <summary><strong>1. Clone and Setup</strong></summary>
@@ -46,6 +45,7 @@ bash scripts/setup.sh
 
 # Or manually
 python -c "from models.database import init_db; init_db()"
+python -c "from models.database import insert_default_users; insert_default_users()"
 ```
 </details>
 
@@ -64,8 +64,8 @@ python app.py
 <details>
 <summary><strong>5. Access Application</strong></summary>
 
-- **Admin Dashboard:** [http://localhost:5000/admin](http://localhost:5000/admin)
-- **API:** [http://localhost:5000/api](http://localhost:5000/api)
+- **Admin Dashboard:** [https://<your-server-ip>:5000/admin](http://103.152.165.248:5000/admin)
+- **API:** [https://<your-server-ip>:5000/api](http://103.152.165.248:5000/api)
 </details>
 
 ---
