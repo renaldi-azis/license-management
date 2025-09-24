@@ -1,7 +1,7 @@
 from datetime import timedelta
 from flask import Blueprint, flash, render_template, request, jsonify, make_response, redirect, url_for
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from flask_recaptcha import ReCaptcha
+# from flask_recaptcha import ReCaptcha
 from services.rate_limiter import rate_limited
 from services.users_service import get_role_by_username
 from services.security import (hash_password, verify_credentials)
@@ -9,7 +9,7 @@ from services.users_service import (create_user, get_users_count, get_users, upd
 from models.database import get_db_connection
 
 bp = Blueprint('auth', __name__)
-recaptcha = ReCaptcha()  # or pass your app if not using factory
+# recaptcha = ReCaptcha()  # or pass your app if not using factory
 
 # Update registration logic to set role
 @bp.route('/register', methods=['GET', 'POST'])
