@@ -55,9 +55,14 @@
 <div class="table-container">
     <div class="table-header">
         <div class="table-title">Products</div>
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-product-input" placeholder="Search...">
+        </div>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
             <i class="fas fa-plus"></i> Add Product
         </button>
+        
     </div>
     <div class="table-responsive">
         <table class="table" id="products-table" style="display: none;">
@@ -102,7 +107,7 @@
         <div class="table-title">Create License</div>
     </div>
     <div class="row">
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="mb-3">
             <label for="product-select" class="form-label">Product</label>
             <select id="product-select" class="form-select">
@@ -111,19 +116,33 @@
             </select>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <label class="form-label">User ID</label>
             <input type="text" class="form-control" id="user-id" placeholder="user123">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-4">
             <label class="form-label">Expires (days)</label>
             <input type="number" class="form-control" id="expires-days" value="30" min="1">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-5">
+            <label for="credit-number" class="form-label">
+                <i class="fas fa-credit-card"></i>Credit Number
+            </label>            
+            <input type="text" class="form-control" id="credit-number" placeholder="Enter your credit number">            
+        </div>
+
+        <div class="col-md-5">
+            <label for="machine-code" class="form-label">
+                <i class="fas fa-desktop"></i>Machine Code
+            </label>
+            <input type="text" class="form-control" id="machine-code" placeholder="Enter your machine code" required>            
+        </div>
+        <div class="col-md-2" style="text-align: center;">
             <label class="form-label">&nbsp;</label>
             <div>
-                <button class="btn btn-success" onclick="createLicense()">
-                    <i class="fas fa-plus-circle"></i> Create License
+                <button class="btn btn-success btn-responsive" onclick="createLicense()">
+                    <i class="fas fa-plus-circle"></i> 
+                    <span class="btn-text">Create License</span>
                 </button>
             </div>
         </div>
@@ -134,6 +153,10 @@
 <div class="table-container">
     <div class="table-header">
         <div class="table-title">All Licenses</div>
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-license-input" placeholder="Search...">
+        </div>
     </div>
     <div class="table-responsive">
         <table class="table" id="licenses-table" style="display: none;">

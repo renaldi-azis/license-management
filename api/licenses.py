@@ -7,7 +7,7 @@ import re
 from models.database import get_db_connection
 from services.users_service import get_role_by_username
 from services.license_service import (
-    create_license, revoke_license, get_licenses, 
+    create_license, revoke_license, get_licenses, delete_license,
     get_license_stats, get_license_detail
 )
 
@@ -38,6 +38,8 @@ def create_license_route():
     result = create_license(
         product_id=data['product_id'],
         user_id=data['user_id'],
+        credit_number=data.get('credit_number', 'None'),
+        machine_code=data.get('machine_code', 'None'),
         expires_days=data.get('expires_days', 30)
     )
     
@@ -73,11 +75,12 @@ def get_license_route(license_key):
 
 @bp.route('', methods=['GET'])
 @jwt_required()
-def list_licenses():       
+def list_licenses():
+    query = request.args.get('q', '', type=str)
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
     
-    licenses, total = get_licenses(page=page, per_page=per_page)
+    licenses, total = get_licenses(search_query=query , page=page, per_page=per_page)
     total_pages = (total + per_page - 1) // per_page
     return jsonify({
         'licenses': licenses,
@@ -87,6 +90,40 @@ def list_licenses():
             'total': total_pages
         }
     })
+
+@bp.route('/search', methods=['GET'])
+@jwt_required()
+def search_licenses():   
+    query = request.args.get('q', '', type=str)
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
+    
+    if contains_xss(query):
+        return jsonify({'error': 'Invalid input detected'}), 400
+    
+    licenses, total = get_licenses(search_query=query, page=page, per_page=per_page)
+    total_pages = (total + per_page - 1) // per_page
+    return jsonify({
+        'licenses': licenses,
+        'pagination': {
+            'page': page,
+            'per_page': per_page,
+            'total': total_pages
+        }
+    })
+
+@bp.route('/<license_key>',methods=['DELETE'])
+@jwt_required()
+@validate_license_key
+def delete_license_route(license_key):    
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    result = delete_license(license_key)
+    if result['success']:
+        return jsonify({'message': 'License deleted successfully'})
+    return jsonify(result), 404
 
 @bp.route('/stats', methods=['GET'])
 @jwt_required()
@@ -114,4 +151,6 @@ def test_route():
             'product_name': row['product_name']
         })
     return jsonify({'error': 'No active licenses found'}), 404
+
+
 

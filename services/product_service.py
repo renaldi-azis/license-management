@@ -4,14 +4,21 @@ def create_product(name, description=None, max_devices=1):
     """Create a new software product."""
     return Product.create(name, description, max_devices)
 
-def get_products(page=1, per_page=10):
+def get_products(search_query="", page=1, per_page=10):
     from models.database import get_db_connection
     offset = (page - 1) * per_page
     with get_db_connection() as conn:
         c = conn.cursor()
-        c.execute('SELECT COUNT(*) FROM products')
+        if(search_query):
+            c.execute('SELECT COUNT(*) FROM products WHERE name LIKE ?', (f'%{search_query}%',))
+        else:
+            c.execute('SELECT COUNT(*) FROM products')
         total = c.fetchone()[0]
-        c.execute('SELECT * FROM products LIMIT ? OFFSET ?', (per_page, offset))
+
+        if(search_query):
+            c.execute('SELECT * FROM products WHERE name LIKE ? LIMIT ? OFFSET ?', (f'%{search_query}%', per_page, offset))
+        else:
+            c.execute('SELECT * FROM products LIMIT ? OFFSET ?', (per_page, offset))
         rows = c.fetchall()
         products = [dict(row) for row in rows]
         # Optionally, add stats to each product here

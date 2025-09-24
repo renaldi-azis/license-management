@@ -31,6 +31,13 @@ def drop_users_table():
         c.execute('DROP TABLE IF EXISTS users')
         conn.commit()
 
+def drop_licenses_table():
+    """Drop the licenses table if it exists."""
+    with get_db_connection_context() as conn:
+        c = conn.cursor()
+        c.execute('DROP TABLE IF EXISTS licenses')
+        conn.commit()
+
 def init_db():
 
     """Initialize the database with tables and indexes."""
@@ -59,7 +66,8 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 expires_at TIMESTAMP,
                 usage_count INTEGER DEFAULT 0,
-                device_id TEXT,
+                credit_number TEXT DEFAULT 'None',
+                machine_code TEXT DeFAULT 'None',
                 FOREIGN KEY(product_id) REFERENCES products (id)
             )
         ''')

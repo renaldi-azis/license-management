@@ -3,9 +3,9 @@ from datetime import datetime, timedelta
 
 class License:
     @staticmethod
-    def create(product_id, user_id, expires_days=30, license_key=None):
+    def create(product_id, user_id, credit_number, machine_code, expires_days=30, license_key=None):
         """Create a new license."""
-        from utils.hash_utils import generate_license_key, hash_license_key
+        from utils.hash_utils import generate_license_key
         
         if not license_key:
             license_key = generate_license_key()
@@ -17,9 +17,9 @@ class License:
             c = conn.cursor()
             try:
                 c.execute('''
-                    INSERT INTO licenses (key, product_id, user_id, expires_at, status)
-                    VALUES (?, ?, ?, ?, 'active')
-                ''', (license_key, product_id, user_id, expires_at))
+                    INSERT INTO licenses (key, product_id, user_id, credit_number, machine_code, expires_at, status)
+                    VALUES (?, ?, ?, ?, ?, ?, 'active')
+                ''', (license_key, product_id, user_id, credit_number, machine_code, expires_at))
                 conn.commit()
                 return {'success': True, 'license_key': license_key}
             except Exception as e:
@@ -29,10 +29,7 @@ class License:
     @staticmethod
     def validate(product_id, license_key, ip_address, device_id=None):
         """Validate a license key."""
-        from utils.hash_utils import hash_license_key
-        from models.product import Product
-        
-        # hashed_key = hash_license_key(license_key)
+        from models.product import Product        
         
         with get_db_connection() as conn:
             c = conn.cursor()
@@ -100,9 +97,6 @@ class License:
     @staticmethod
     def revoke(license_key):
         """Revoke a license."""
-        from utils.hash_utils import hash_license_key
-        
-        # hashed_key = hash_license_key(license_key)
         
         with get_db_connection() as conn:
             c = conn.cursor()
@@ -113,6 +107,22 @@ class License:
             if affected > 0:
                 License.log_usage(license_key, 'admin', 'revocation', 'success')
                 return {'success': True, 'message': 'License revoked'}
+            
+            return {'success': False, 'error': 'License not found'}
+        
+    @staticmethod
+    def delete(license_key):
+        """Delete a license."""
+        
+        with get_db_connection() as conn:
+            c = conn.cursor()
+            c.execute("DELETE FROM licenses WHERE key = ?", (license_key,))
+            affected = c.rowcount
+            conn.commit()
+            
+            if affected > 0:
+                License.log_usage(license_key, 'admin', 'deletion', 'success')
+                return {'success': True, 'message': 'License deleted'}
             
             return {'success': False, 'error': 'License not found'}
         

@@ -74,9 +74,9 @@ async function loadStats() {
 }
 
 // Load products table
-async function loadProducts(page = 1) {
+async function loadProducts(page = 1, query = '') {
     try {
-        const res = await axios.get(`${API_BASE}/products?page=${page}`);
+        const res = await axios.get(`${API_BASE}/products?page=${page}&q=${encodeURIComponent(query)}`);
         const products = res.data.products || [];
         const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#products-table tbody');
@@ -223,9 +223,9 @@ async function removeUser(username) {
 }
 
 // Load licenses table
-async function loadLicenses(page = 1) {
+async function loadLicenses(page = 1 , query = '') {
     try {
-        const res = await axios.get(`/api/licenses?page=${page}`);
+        const res = await axios.get(`${API_BASE}/licenses?page=${page}&q=${encodeURIComponent(query)}`);
         const licenses = res.data.licenses || [];
         const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#licenses-table tbody');
@@ -267,13 +267,16 @@ async function loadLicenses(page = 1) {
                 <td>${license.usage_count}</td>
                 <td>
                     ${license.status === 'active' ? 
-                        `<button class="btn btn-sm btn-outline-danger" onclick="revokeLicense('${license.key}')">
+                        `<button class="btn btn-sm btn-outline-primary" onclick="revokeLicense('${license.key}')">
                             Revoke
                         </button>` : 
                         ''
                     }
                     <button class="btn btn-sm btn-outline-info" onclick="showLicenseDetail('${license.key}')">
                         Details
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeLicense('${license.key}')">
+                        Delete
                     </button>
                 </td>
             </tr>
@@ -292,16 +295,25 @@ async function createLicense() {
     const productId = document.getElementById('product-select').value;
     const userId = document.getElementById('user-id').value;
     const expiresDays = document.getElementById('expires-days').value;
+    const credit_number = document.getElementById('credit-number').value;
+    const machine_code = document.getElementById('machine-code').value;
     
     if (!productId || !userId) {
-        showAlert('Please select a product and enter user ID', 'warning');
+        showAlert('Please select a product and enter userId', 'warning');
         return;
     }
     
+    if(!machine_code){
+        showAlert('Please enter machine code', 'warning');
+        return;
+    }
+
     try {
         const response = await axios.post(`${API_BASE}/licenses`, {
             product_id: parseInt(productId),
             user_id: userId,
+            credit_number: credit_number || 'None',
+            machine_code: machine_code || 'None',
             expires_days: parseInt(expiresDays)
         });
         
@@ -368,11 +380,49 @@ async function revokeLicense(licenseKey) {
     }
 }
 
+// Remove license
+async function removeLicense(licenseKey) {
+    if (!confirm('Are you sure you want to delete this license? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await axios.delete(`${API_BASE}/licenses/${licenseKey}`);
+        showAlert('License deleted successfully', 'success');
+        await loadLicenses();
+        await loadStats();
+    } catch (error) {
+        showAlert(error.response?.data?.error || 'Failed to delete license', 'danger');
+    }
+}
+
 // Copy license key to clipboard
 function copyLicenseKey(key) {
-    navigator.clipboard.writeText(key).then(() => {
-        showAlert('License key copied to clipboard', 'info');
-    });
+    if(navigator.clipboard.writeText === undefined){
+        // Fallback for older browsers and HTTP
+        const tempInput = document.createElement('input');
+        tempInput.value = key;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        alert('License key copied!');
+        return;
+    }
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(key)
+            .then(() => alert('License key copied!'))
+            .catch(err => alert('Failed to copy license key.'));
+    } else {
+        // Fallback for older browsers
+        const tempInput = document.createElement('input');
+        tempInput.value = key;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        alert('License key copied!');
+    }
 }
 
 // Update product select dropdown
@@ -558,11 +608,6 @@ async function removeProduct(productId) {
     }
 }
 
-// View license details (placeholder)
-function viewLicenseDetails(licenseId) {
-    showAlert('License details view coming soon!', 'info');
-}
-
 // Create stats modal
 function createStatsModal(title, stats) {
     const modalHtml = `
@@ -614,6 +659,23 @@ function logoutAndRedirect() {
     window.location.href = '/login';
 }
 
+//Enter key event for searching licenses
+document.getElementById('search-license-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = e.target.value.trim();
+        loadLicenses(1, query);
+    }
+});
+
+document.getElementById('search-product-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = e.target.value.trim();
+        loadProducts(1, query);
+    }
+});
+
 // Attach to logout link if using JS navigation
 document.addEventListener('DOMContentLoaded', function() {
     const logoutLink = document.querySelector('a[href="/api/auth/logout"]');
@@ -639,8 +701,10 @@ async function showLicenseDetail(licenseKey) {
             <ul class="list-group">
                 <li class="list-group-item"><strong>License Key:</strong> ${lic.key}</li>
                 <li class="list-group-item"><strong>Product:</strong> ${lic.product_name}</li>
-                <li class="list-group-item"><strong>User:</strong> ${lic.user_id}</li>
+                <li class="list-group-item"><strong>User:</strong> ${lic.user_id}</li>                
                 <li class="list-group-item"><strong>Status:</strong> ${lic.status}</li>
+                <li class="list-group-item"><strong>Credit_Number:</strong> ${lic.credit_number}</li>
+                <li class="list-group-item"><strong>Machine_Code:</strong> ${lic.machine_code}</li>
                 <li class="list-group-item"><strong>Expires At:</strong> ${lic.expires_at || 'N/A'}</li>
                 <li class="list-group-item"><strong>Usage Count:</strong> ${lic.usage_count || 0}</li>
                 <li class="list-group-item"><strong>Created At:</strong> ${lic.created_at || 'N/A'}</li>

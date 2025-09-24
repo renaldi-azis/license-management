@@ -3,20 +3,16 @@ from models.license import License
 from models.product import Product
 from utils.hash_utils import hash_license_key
 
-def create_license(product_id, user_id, expires_days=30):
+def create_license(product_id, user_id, credit_number, machine_code,expires_days=30):
     """Create a new license for a product."""
     # Verify product exists
     product = Product.get_by_id(product_id)
     if not product:
         return {'success': False, 'error': 'Product not found'}
     
-    return License.create(product_id, user_id, expires_days)
+    return License.create(product_id, user_id, credit_number , machine_code, expires_days)
 
-def revoke_license(license_key):
-    """Revoke a license key."""
-    return License.revoke(license_key)
-
-def get_licenses(page=1, per_page=10):
+def get_licenses(search_query="", page=1, per_page=10):
     """Get all licenses with pagination."""
     from models.database import get_db_connection
     
@@ -26,8 +22,18 @@ def get_licenses(page=1, per_page=10):
        
     with get_db_connection() as conn:
         c = conn.cursor()
-        
-        c.execute('SELECT COUNT(*) FROM licenses')
+
+        # get total count that matches search query
+        if search_query:
+            # search by userId, machine_code, or partial key
+            c.execute('''
+                SELECT COUNT(*) 
+                FROM licenses l
+                LEFT JOIN products p ON l.product_id = p.id
+                WHERE l.user_id LIKE ? OR l.machine_code LIKE ? OR l.key LIKE ?
+            ''', (f'%{search_query}%', f'%{search_query}%', f'%{search_query}%'))  
+        else:
+            c.execute('SELECT COUNT(*) FROM licenses')
         total = c.fetchone()[0]
 
         # update licenses expired status
@@ -38,13 +44,23 @@ def get_licenses(page=1, per_page=10):
         ''', (datetime.now(),))
         conn.commit()
         
-        c.execute('''
-            SELECT l.*, p.name as product_name
-            FROM licenses l
-            LEFT JOIN products p ON l.product_id = p.id
-            ORDER BY l.created_at DESC
-            LIMIT ? OFFSET ?
-        ''', (per_page, offset))
+        if search_query:
+            c.execute('''
+                SELECT l.*, p.name as product_name
+                FROM licenses l
+                LEFT JOIN products p ON l.product_id = p.id
+                WHERE l.user_id LIKE ? OR l.machine_code LIKE ? OR l.key LIKE ?
+                ORDER BY l.created_at DESC
+                LIMIT ? OFFSET ?
+            ''', (f'%{search_query}%', f'%{search_query}%', f'%{search_query}%', per_page, offset))
+        else:
+            c.execute('''
+                SELECT l.*, p.name as product_name
+                FROM licenses l
+                LEFT JOIN products p ON l.product_id = p.id
+                ORDER BY l.created_at DESC
+                LIMIT ? OFFSET ?
+            ''', (per_page, offset))
 
         licenses = []
         for row in c.fetchall():
@@ -119,6 +135,14 @@ def get_license_stats():
             'max_usage': usage_stats['max_usage'] or 0,
             'recent_validations': recent_validations
         }
+    
+def revoke_license(license_key):
+    """Revoke a license key."""
+    return License.revoke(license_key)
+
+def delete_license(license_key):
+    """Delete a license key."""
+    return License.delete(license_key)
     
 def validate_license(product_name, license_key, ip_address, device_id=None):
     """Validate a license key for a product."""

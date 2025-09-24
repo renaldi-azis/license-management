@@ -14,8 +14,9 @@ bp = Blueprint('products', __name__)
 @jwt_required()
 def list_products():
     page = int(request.args.get('page', 1))
+    query = request.args.get('q', '').strip()
     per_page = int(request.args.get('per_page', 5))
-    products, total = get_products(page, per_page)
+    products, total = get_products(search_query=query, page=page, per_page=per_page)
     total_pages = (total + per_page - 1) // per_page
     return jsonify({
         'products': products,
