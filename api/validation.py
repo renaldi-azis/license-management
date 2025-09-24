@@ -3,19 +3,20 @@ from datetime import datetime
 
 from models.database import get_db_connection
 from services.license_service import validate_license
-from services.rate_limiter import suspicious_activity_check, redis_client
+from services.rate_limiter import rate_limited, suspicious_activity_check, redis_client
 from utils.hash_utils import hash_license_key
 from utils.validators import validate_license_key
 
 bp = Blueprint('validation', __name__)
 
 @bp.route('/<product_name>/<license_key>', methods=['GET'])
+@rate_limited(limit='10 per minute')  # Limit validation requests
 @validate_license_key
 def validate_license_route(product_name, license_key):
     """Validate license with safety checks."""
     try:
         ip = request.remote_addr
-    
+            
         # Safe suspicious activity check
         if suspicious_activity_check(ip):
             return jsonify({

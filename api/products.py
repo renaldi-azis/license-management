@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from services.rate_limiter import rate_limited
 from services.users_service import get_role_by_username
 from services.product_service import (
     create_product, get_products, update_product, 
@@ -11,6 +12,7 @@ from utils.validators import validate_json
 bp = Blueprint('products', __name__)
 
 @bp.route('', methods=['GET'])
+@rate_limited(limit='30 per minute')  # Limit product listing
 @jwt_required()
 def list_products():
     page = int(request.args.get('page', 1))
@@ -28,6 +30,7 @@ def list_products():
     })
 
 @bp.route('/all', methods=['GET'])
+@rate_limited(limit='30 per minute')  # Limit product retrieval
 def get_all_products():
     from services.product_service import get_products
     # Get all products without pagination
@@ -35,6 +38,7 @@ def get_all_products():
     return jsonify({'products': products})
 
 @bp.route('', methods=['POST'])
+@rate_limited(limit='20 per minute')  # Limit product creation
 @jwt_required()
 @validate_json({'name': str, 'max_devices': int})
 def create_product_route():
@@ -54,6 +58,7 @@ def create_product_route():
     return jsonify(result), 400
 
 @bp.route('/<int:product_id>', methods=['PUT'])
+@rate_limited(limit='20 per minute')  # Limit product updates
 @jwt_required()
 @validate_json({'name': str, 'max_devices': int})
 def update_product_route(product_id):
@@ -72,6 +77,7 @@ def update_product_route(product_id):
     return jsonify(result), 400
 
 @bp.route('/<int:product_id>/stats', methods=['GET'])
+@rate_limited(limit='30 per minute')  # Limit product stats retrieval
 @jwt_required()
 def product_stats(product_id):
     username = get_jwt_identity()
@@ -82,6 +88,7 @@ def product_stats(product_id):
     return jsonify(stats)
 
 @bp.route('/<int:product_id>', methods=['DELETE'])
+@rate_limited(limit='20 per minute')  # Limit product deletion
 @jwt_required()
 def delete_product_route(product_id):
     username = get_jwt_identity()

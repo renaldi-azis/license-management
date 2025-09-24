@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import re
 
 from models.database import get_db_connection
+from services.rate_limiter import rate_limited
 from services.users_service import get_role_by_username
 from services.license_service import (
     create_license, revoke_license, get_licenses, delete_license,
@@ -22,6 +23,7 @@ def contains_xss(value):
     return bool(re.search(r'<script|onerror=|onload=|javascript:', value, re.IGNORECASE))
 
 @bp.route('', methods=['POST'])
+@rate_limited(limit='20 per minute')  # Limit license creation
 @jwt_required()
 @validate_json({
     'product_id': int,
@@ -50,6 +52,7 @@ def create_license_route():
     return jsonify(result), 400
 
 @bp.route('/<license_key>/revoke', methods=['POST'])
+@rate_limited(limit='10 per minute')  # Limit license revocation
 @jwt_required()
 @validate_license_key
 def revoke_license_route(license_key):
@@ -63,6 +66,7 @@ def revoke_license_route(license_key):
     return jsonify(result), 404
 
 @bp.route('/<license_key>', methods=['GET'])
+@rate_limited(limit='10 per minute')  # Limit license retrieval
 @jwt_required()
 @validate_license_key
 def get_license_route(license_key):
@@ -76,6 +80,7 @@ def get_license_route(license_key):
     return jsonify(result), 404
 
 @bp.route('', methods=['GET'])
+@rate_limited(limit='30 per minute')  # Limit license listing
 @jwt_required()
 def list_licenses():
     query = request.args.get('q', '', type=str)
@@ -94,6 +99,7 @@ def list_licenses():
     })
 
 @bp.route('/search', methods=['GET'])
+@rate_limited(limit='30 per minute')  # Limit license search
 @jwt_required()
 def search_licenses():   
     query = request.args.get('q', '', type=str)
@@ -115,6 +121,7 @@ def search_licenses():
     })
 
 @bp.route('/<license_key>',methods=['DELETE'])
+@rate_limited(limit='20 per minute')  # Limit license deletion
 @jwt_required()
 @validate_license_key
 def delete_license_route(license_key):    
@@ -128,12 +135,14 @@ def delete_license_route(license_key):
     return jsonify(result), 404
 
 @bp.route('/stats', methods=['GET'])
+@rate_limited(limit='10 per minute')  # Limit license stats retrieval
 @jwt_required()
 def license_stats():   
     stats = get_license_stats()
     return jsonify(stats)
 
 @bp.route('/test/data', methods=['GET'])
+@rate_limited(limit='30 per minute')  # Limit test data retrieval
 @jwt_required()
 def test_route():
     conn = get_db_connection()
@@ -154,8 +163,8 @@ def test_route():
         })
     return jsonify({'error': 'No active licenses found'}), 404
 
-
 @bp.route('/backup', methods=['GET'])
+@rate_limited(limit='5 per minute')  # Limit backup downloads
 @jwt_required()
 def backup_licenses():
     username = get_jwt_identity()

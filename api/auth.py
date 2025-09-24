@@ -1,6 +1,7 @@
 from datetime import timedelta
 from flask import Blueprint, flash, render_template, request, jsonify, make_response, redirect, url_for
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from services.rate_limiter import rate_limited
 from services.users_service import get_role_by_username
 from services.security import (hash_password, verify_credentials)
 from services.users_service import (create_user, get_users_count, get_users, update_user, remove_user)
@@ -10,6 +11,7 @@ bp = Blueprint('auth', __name__)
 
 # Update registration logic to set role
 @bp.route('/register', methods=['GET', 'POST'])
+@rate_limited(limit='30 per minute')  # Limit registration attempts
 def register():
     if request.method == 'POST':
         data = request.get_json()
@@ -33,6 +35,7 @@ def register():
 
 
 @bp.route('/login', methods=['POST','GET'])
+@rate_limited(limit='10 per minute')  # Limit login attempts
 def login():
     if request.method == 'POST':        
         data = request.get_json()
@@ -74,6 +77,7 @@ def logout():
     return resp
 
 @bp.route('/users', methods=['GET'])
+@rate_limited(limit='20 per minute')  # Limit user listing
 @jwt_required()
 def list_users():
     current_user = get_jwt_identity()
@@ -95,6 +99,7 @@ def list_users():
     })
 
 @bp.route('/users/<string:username>/<string:role>', methods=['PUT'])
+@rate_limited(limit='20 per minute')  # Limit user listing
 @jwt_required()
 def change_user_role(username, role):
     current_user = get_jwt_identity()
@@ -104,6 +109,7 @@ def change_user_role(username, role):
     return jsonify({'result': 'success'})
 
 @bp.route('/users/<string:username>', methods=['DELETE'])
+@rate_limited(limit='20 per minute')  # Limit user deletion
 @jwt_required()
 def delete_user(username):
     current_user = get_jwt_identity()

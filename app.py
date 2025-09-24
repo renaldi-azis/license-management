@@ -10,6 +10,7 @@ from models.database import init_db
 from services.rate_limiter import init_limiter
 from services.rate_limiter import redis_client
 from services.security import init_recaptcha
+from services.rate_limiter import suspicious_activity_check
 
 
 def create_app():
@@ -114,6 +115,16 @@ def create_app():
             'error': 'Rate limit exceeded',
             'retry_after': getattr(e, 'retry_after', 60)
         }, 429
+    
+    # Check ip suspicious activity
+    @app.before_request
+    def check_suspicious_activity():        
+        ip = get_remote_address()
+        if suspicious_activity_check(ip):
+            return {
+                'error': 'Too many requests from this IP. Please try again later.',
+                'retry_after': 3600
+            }, 429
     
     @app.context_processor
     def inject_current_user():
