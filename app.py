@@ -9,7 +9,7 @@ from api import auth, licenses, products , validation
 from models.database import init_db
 from services.rate_limiter import limiter
 from services.rate_limiter import redis_client
-from services.security import init_recaptcha
+# from services.security import init_recaptcha
 from services.rate_limiter import suspicious_activity_check
 
 
@@ -43,7 +43,7 @@ def create_app():
     
     
     # Initialize reCAPTCHA
-    init_recaptcha(app)
+    # init_recaptcha(app)
     
     # Health check endpoint
     @app.route('/health')
