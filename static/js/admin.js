@@ -125,13 +125,13 @@ async function loadProducts(page = 1, query = '') {
 }
 
 async function loadUsers(page = 1) {
-    try{
-        const res = await axios.get(`${API_BASE}/auth/users?page=${page}`);
-        const users = res.data.users || [];
-        const pagination = res.data.pagination || { page: 1, total: 1 };
+    try{        
         const tbody = document.querySelector('#users-table tbody');
         const noDataDiv = document.getElementById('users-no-data');
         if(tbody === null) return;
+        const res = await axios.get(`${API_BASE}/auth/users?page=${page}`);
+        const users = res.data.users || [];
+        const pagination = res.data.pagination || { page: 1, total: 1 };
         if(users.length == 0) {
             document.getElementById('users-table').style.display = 'none';
             document.getElementById('users-pagination').style.display = 'none';
