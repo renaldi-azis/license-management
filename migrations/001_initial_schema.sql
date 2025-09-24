@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS licenses (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     expires_at TIMESTAMP,
     usage_count INTEGER DEFAULT 0,
+    credit_number TEXT DEFAULT 'None',
+    machine_code TEXT DEFAULT 'None',
     device_id TEXT,
     last_used_at TIMESTAMP,
     FOREIGN KEY(product_id) REFERENCES products (id) ON DELETE CASCADE
@@ -38,12 +40,17 @@ CREATE TABLE IF NOT EXISTS usage_logs (
     error_message TEXT
 );
 
--- Usage user table
+-- Users table
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL
-    role TEXT NOT NULL DEFAULT 'user'
+    password TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    role TEXT NOT NULL DEFAULT 'user',
+    credit_number TEXT DEFAULT 'Not Provided',
+    machine_code TEXT DEFAULT 'Not Provided',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes for performance
