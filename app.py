@@ -8,17 +8,13 @@ from config import Config
 from api import auth, licenses, products , validation
 from models.database import init_db
 from services.rate_limiter import init_limiter
+from services.rate_limiter import redis_client
 from services.security import init_recaptcha
 
-limiter = Limiter(
-    get_remote_address,
-    app=None,  # Will be set later
-    default_limits=["20 per minute"]  # Example: 10 requests per minute per IP
-)
 
 def create_app():
     app = Flask(__name__)
-    limiter.init_app(app)
+    # limiter.init_app(app)
     app.config.from_object(Config)
     
     # Register error handlers first
@@ -54,8 +50,7 @@ def create_app():
                 with get_db_connection() as conn:
                     conn.execute("SELECT 1")
             
-            # Test Redis (if available)
-            from services.rate_limiter import redis_client
+            # Test Redis (if available)            
             redis_status = "connected" if redis_client and redis_client.ping() else "unavailable"
             
             return {
@@ -78,13 +73,6 @@ def create_app():
     # Simple routes
     @app.route('/')
     def index():
-        try:
-            verify_jwt_in_request(optional=True)
-            if get_jwt_identity() == 'admin':
-                return redirect(url_for('admin'))
-        except Exception:
-            pass
-
         try:
             verify_jwt_in_request(optional=True)
             user = get_jwt_identity()
@@ -136,14 +124,16 @@ def create_app():
             from models.database import get_db_connection
             with get_db_connection() as conn:
                 c = conn.cursor()
-                c.execute('SELECT username, first_name, last_name, role FROM users WHERE username = ?', (user,))
+                c.execute('SELECT username, first_name, last_name, credit_number, machine_code, role FROM users WHERE username = ?', (user,))
                 row = c.fetchone()
                 if row:
                     user = {
                         'username': row[0],
                         'first_name': row[1],
                         'last_name': row[2],
-                        'role': row[3]
+                        'credit_number': row[3],
+                        'machine_code': row[4],                        
+                        'role': row[5]
                     }
                 else:
                     user = None

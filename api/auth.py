@@ -4,7 +4,10 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from models.database import get_db_connection
+
+from services.users_service import get_role_by_username
 from services.security import verify_admin_credentials
+from services.users_service import (create_user, get_users_count, get_users, update_user, remove_user)
 from utils.validators import validate_json
 
 bp = Blueprint('auth', __name__)
@@ -15,41 +18,29 @@ def register():
     if request.method == 'POST':
         data = request.get_json()
         username, password , firstname, lastname = data['username'], data['password'], data['firstname'], data['lastname']
+        role = 'user'  # Default role
         
-        with get_db_connection() as conn:
-            c = conn.cursor()
-            c.execute('SELECT COUNT(*) FROM users')
-            
-            if c.fetchone()[0] == 0:
-                hashed_pw = generate_password_hash(password)
-                c.execute(
-                    'INSERT INTO users (username, password, first_name, last_name ,role) VALUES (?, ?, ?, ?, ?)',
-                    (username, hashed_pw, firstname, lastname, 'admin')
-                )
-                conn.commit()
-                return jsonify({"result":"success"}), 201
-
-        with get_db_connection() as conn:
-            c = conn.cursor()
-            c.execute('SELECT * FROM users WHERE username = ?', (username,))
-            if c.fetchone():
-                # flash('Username already exists', 'danger')
-                return jsonify({"error":"Username already exists" }), 400
-            hashed_pw = generate_password_hash(password)
-            c.execute(
-                'INSERT INTO users (username, password, first_name, last_name ,role) VALUES (?, ?, ?, ?, ?)',
-                (username, hashed_pw, firstname, lastname, 'admin')
-            )
-            conn.commit()
-            return jsonify({"result":"success"}), 201
+        if get_users_count() == 0:
+            # If no users exist, create the first user as admin
+            role = 'admin'
+        hashed_pw = generate_password_hash(password)
+        create_user(
+            username=username,
+            password_hash=hashed_pw,
+            first_name=firstname,
+            last_name=lastname,
+            role=role  # Subsequent users are regular users
+        )
+        return jsonify({"result":"success"}), 201
         
     return render_template('register.html')
+
 
 @bp.route('/login', methods=['POST','GET'])
 def login():
     if request.method == 'POST':        
         data = request.get_json()
-        username, password = data['username'], data['password']
+        username, password, credit_number, machine_code= data['username'], data['password'], data['credit_number'], data['machine_code']
         role = None
         # get role by username & password
         with get_db_connection() as conn:
@@ -60,13 +51,18 @@ def login():
                 return jsonify({'error': 'Invalid credentials'}), 401
             if row:
                 expected_password_hash = row[0]
-                role = row[1]
+                # update credit_number and machine_code
+                if(machine_code is None or machine_code.strip() == ''):
+                    machine_code = 'Not Provided'
+                if(credit_number is None or credit_number.strip() == ''):
+                    credit_number = 'Not Provided'
+                update_user(username, credit_number=credit_number, machine_code=machine_code)
             else:
                 expected_password_hash = None      
 
         if verify_admin_credentials(expected_password_hash, password):
             access_token = create_access_token(
-                identity= role,  # Use role as identity
+                identity= username,  # Use username as identity
                 expires_delta=timedelta(days=1)
             )
             resp = make_response({'access_token': access_token, 'user': username})
@@ -74,28 +70,6 @@ def login():
             return resp
         return jsonify({'error': 'Invalid credentials'}), 401
     return render_template('login.html')
-
-@bp.route('/me', methods=['GET'])
-@jwt_required()
-def get_current_user():
-    current_user = get_jwt_identity()
-    # find user by username
-    with get_db_connection() as conn:
-        c = conn.cursor()
-        c.execute('SELECT username, first_name, last_name, role FROM users WHERE username = ?', (current_user,))
-        user = c.fetchone()
-        if user:
-            current_user = {
-                'username': user[0],
-                'first_name': user[1],
-                'last_name': user[2],
-                'role': user[3]
-            }
-        else:
-            return jsonify({'error': 'User not found'}), 404
-    if(current_user is None):
-        current_user = get_jwt_identity()
-    return jsonify({'user': current_user})
 
 @bp.route('/logout', methods=['GET', 'POST'])
 def logout():
@@ -107,35 +81,14 @@ def logout():
 @jwt_required()
 def list_users():
     current_user = get_jwt_identity()
-    if current_user != 'admin':
+    if get_role_by_username(current_user) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 5))
-    offset = (page - 1) * per_page
-    with get_db_connection() as conn:
-        c = conn.cursor()
-        c.execute('SELECT COUNT(*) FROM users')
-        total = c.fetchone()[0]
-        
-        c.execute('''
-            SELECT id, username, first_name, last_name, role 
-            FROM users 
-            WHERE username != ?
-            ORDER BY id 
-            LIMIT ? OFFSET ?
-        ''', (current_user, per_page, offset))
-        
-        users = [
-            {
-                'id': row[0],
-                'username': row[1],
-                'first_name': row[2],
-                'last_name': row[3],
-                'role': row[4]
-            } for row in c.fetchall()
-        ]
-    total_pages = (total + per_page - 1) // per_page
+    (users, total) = get_users(page, per_page)
+    users = [user for user in users if user['username'] != current_user]
+    total_pages = (len(users) + per_page - 1) // per_page
     return jsonify({
         'users': users,
         'pagination': {
@@ -149,35 +102,17 @@ def list_users():
 @jwt_required()
 def change_user_role(username, role):
     current_user = get_jwt_identity()
-    if current_user != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
-    # data = request.get_json()
-    # new_role = data.get('role')
-    if role not in ['admin', 'user']:
-        return jsonify({'error': 'Invalid role specified'}), 400
-    
-    with get_db_connection() as conn:
-        c = conn.cursor()
-        c.execute('UPDATE users SET role = ? WHERE username = ?', (role, username))
-        if c.rowcount == 0:
-            return jsonify({'error': 'User not found'}), 404
-        conn.commit()
-    
+    if get_role_by_username(current_user) != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403    
+    update_user(username, role=role) 
     return jsonify({'result': 'success'})
 
 @bp.route('/users/<string:username>', methods=['DELETE'])
 @jwt_required()
 def delete_user(username):
     current_user = get_jwt_identity()
-    if current_user != 'admin':
+    if get_role_by_username(current_user) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
-    with get_db_connection() as conn:
-        c = conn.cursor()
-        c.execute('DELETE FROM users WHERE username = ?', (username,))
-        if c.rowcount == 0:
-            return jsonify({'error': 'User not found'}), 404
-        conn.commit()
-    
+    remove_user(username)    
     return jsonify({'result': 'success'})

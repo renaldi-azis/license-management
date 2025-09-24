@@ -33,9 +33,6 @@ def drop_users_table():
 
 def init_db():
 
-    # Drop users table if it exists
-    drop_users_table()
-
     """Initialize the database with tables and indexes."""
     with get_db_connection_context() as conn:
         c = conn.cursor()
@@ -88,10 +85,13 @@ def init_db():
                 password TEXT NOT NULL,
                 first_name TEXT,
                 last_name TEXT,
-                role TEXT NOT NULL DEFAULT 'user'
-            );
+                role TEXT NOT NULL DEFAULT 'user',
+                credit_number TEXT DEFAULT 'Not Provided',
+                machine_code TEXT DEFAULT 'Not Provided',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         ''')
-        
+
         # Indexes for performance
         c.execute('CREATE INDEX IF NOT EXISTS idx_licenses_key ON licenses(key)')
         c.execute('CREATE INDEX IF NOT EXISTS idx_licenses_status ON licenses(status)')

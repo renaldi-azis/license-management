@@ -2,12 +2,15 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from datetime import datetime, timedelta
 
+import re
+
 from models.database import get_db_connection
+from services.users_service import get_role_by_username
 from services.license_service import (
     create_license, revoke_license, get_licenses, 
     get_license_stats, get_license_detail
 )
-import re
+
 from utils.validators import validate_json, validate_license_key
 
 bp = Blueprint('licenses', __name__)
@@ -24,7 +27,8 @@ def contains_xss(value):
     'expires_days': int
 })
 def create_license_route():
-    if get_jwt_identity() != 'admin':
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
     data = request.get_json()
@@ -45,7 +49,8 @@ def create_license_route():
 @jwt_required()
 @validate_license_key
 def revoke_license_route(license_key):
-    if get_jwt_identity() != 'admin':
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
     result = revoke_license(license_key)
@@ -57,7 +62,8 @@ def revoke_license_route(license_key):
 @jwt_required()
 @validate_license_key
 def get_license_route(license_key):
-    if get_jwt_identity() != 'admin':
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
     result = get_license_detail(license_key)
@@ -67,10 +73,7 @@ def get_license_route(license_key):
 
 @bp.route('', methods=['GET'])
 @jwt_required()
-def list_licenses():
-    # if get_jwt_identity() != 'admin':
-    #     return jsonify({'error': 'Admin access required'}), 403
-    
+def list_licenses():       
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
     
@@ -85,10 +88,15 @@ def list_licenses():
         }
     })
 
+@bp.route('/stats', methods=['GET'])
+@jwt_required()
+def license_stats():   
+    stats = get_license_stats()
+    return jsonify(stats)
+
 @bp.route('/test/data', methods=['GET'])
 @jwt_required()
 def test_route():
-    # get one active license
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -107,8 +115,3 @@ def test_route():
         })
     return jsonify({'error': 'No active licenses found'}), 404
 
-@bp.route('/stats', methods=['GET'])
-@jwt_required()
-def license_stats():   
-    stats = get_license_stats()
-    return jsonify(stats)

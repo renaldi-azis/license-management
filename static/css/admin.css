@@ -6,6 +6,9 @@
     --info: #0984e3;
     --warning: #fdcb6e;
     --warning-text: #e17055;
+    --light-bg: #f8f9fc;
+    --dark-text: #5a5c69;
+    --light-text: #858796;
     --danger: #d63031;
     --light: #f8f9fa;
     --dark: #1e2129;
@@ -206,24 +209,28 @@ body {
 }
 
 /* Improved logout button */
+.credit-number, .machine-code {
+    font-size: 0.85rem;
+    color: var(--light-text);
+    background: var(--light-bg);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+}
+
 .logout-btn {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    color: #6c757d;
+    gap: 8px;
+    color: var(--light-text);
     text-decoration: none;
-    transition: all 0.2s ease;
-    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: var(--transition);
 }
 
 .logout-btn:hover {
-    background-color: #e9ecef;
-    color: #495057;
-    border-color: #ced4da;
+    background-color: var(--light-bg);
+    color: var(--primary);
 }
 
 /* Mobile responsiveness */

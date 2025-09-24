@@ -1,6 +1,6 @@
 from models.database import get_db_connection
 
-class Product:
+class Product:  
     @staticmethod
     def create(name, description=None, max_devices=1):
         """Create a new product."""

@@ -2,6 +2,7 @@ import redis
 from flask import current_app, has_request_context
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from services.users_service import get_role_by_username
 from datetime import timedelta
 from contextlib import contextmanager
 import time
@@ -12,7 +13,7 @@ redis_client = None
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["1000 per day", "100 per hour"],
+    default_limits=["1000 per hour", "40 per minute"],  # Default limits
     storage_uri=None  # Will set later
 )
 
@@ -222,7 +223,7 @@ def admin_rate_limited(limit="10/minute"):
             
             try:
                 current_user = get_jwt_identity()
-                if current_user != 'admin':
+                if get_role_by_username(current_user) != 'admin':
                     return current_app.response_class(
                         json.dumps({"error": "Admin access required"}),
                         status=403,
