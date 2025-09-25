@@ -27,7 +27,7 @@ def contains_xss(value):
 @validate_json({
     'product_id': int,
     'user_id': str,
-    'expires_days': int
+    'expires_hours': int
 })
 def create_license_route():
     username = get_jwt_identity()
@@ -43,7 +43,7 @@ def create_license_route():
         user_id=data['user_id'],
         credit_number=data.get('credit_number', 'None'),
         machine_code=data.get('machine_code', 'None'),
-        expires_days=data.get('expires_days', 30)
+        expires_hours=data.get('expires_hours', 30)
     )
     
     if result['success']:

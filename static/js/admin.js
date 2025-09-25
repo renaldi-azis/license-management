@@ -309,7 +309,7 @@ async function createLicense() {
             user_id: userId,
             credit_number: credit_number || 'None',
             machine_code: machine_code || 'None',
-            expires_days: parseInt(expiresHours)
+            expires_hours: parseInt(expiresHours)
         });
         
         const result = response.data;
