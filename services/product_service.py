@@ -96,7 +96,7 @@ def remove_product(product_id):
         c = conn.cursor()
         c.execute('DELETE FROM products WHERE id = ?', (product_id,))
         c.execute('DELETE FROM licenses WHERE product_id = ?', (product_id,))
-        # if c.rowcount == 0:
-        #     return {'success': False, 'error': 'Product not found'}
+        c.execute('DELETE FROM settings WHERE product_id = ?', (product_id,))
+        
         conn.commit()
         return {'success': True}

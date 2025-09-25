@@ -3,15 +3,16 @@ from models.product import Product
 from models.setting import Setting
 
 def create_setting(product_id, number_of_credits, license_duration_hours):
-    """Create or update settings for a product."""
-    setting = Setting.get_by_product_id(product_id)
-    if setting:
-        setting.number_of_credits = number_of_credits
-        setting.license_duration_hours = license_duration_hours
-        setting.save()
-    else:
-        setting = Setting.create(product_id, number_of_credits, license_duration_hours)
-    return setting
+    """Create a new setting for a product."""
+    if Setting.get_by_product_id(product_id):
+        return {'success': False, 'error': 'Setting for this product already exists'}, 400
+    
+    product = Product.get_by_id(product_id)
+    if not product:
+        return {'success': False, 'error': 'Product not found'}, 400
+    
+    return Setting.create(product_id, number_of_credits, license_duration_hours)
+
 
 def update_setting(product_id, number_of_credits=None, license_duration_hours=None):
     """Update settings for a product."""
@@ -19,13 +20,9 @@ def update_setting(product_id, number_of_credits=None, license_duration_hours=No
     if not setting:
         return {'success': False, 'error': 'Setting not found'}
     
-    if number_of_credits is not None:
-        setting.number_of_credits = number_of_credits
-    if license_duration_hours is not None:
-        setting.license_duration_hours = license_duration_hours
+    return Setting.update(product_id, number_of_credits, license_duration_hours)
     
-    setting.save()
-    return {'success': True, 'setting': setting}
+    
 
 def get_settings(search_query="", page=1, per_page=10):
     """Get all settings with pagination."""
@@ -74,8 +71,8 @@ def get_settings(search_query="", page=1, per_page=10):
                 ORDER BY s.created_at DESC
                 LIMIT ? OFFSET ?
             ''', (per_page, offset))
-        settings = c.fetchall()
-        
+        rows = c.fetchall()
+        settings = [dict(row) for row in rows]
     return settings, total
 
 def get_setting_by_product_id(product_id):

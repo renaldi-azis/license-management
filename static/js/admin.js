@@ -4,6 +4,7 @@ let productsCurrentPage = 1;
 let licensesCurrentPage = 1;
 let productChoices = null;
 let productSearchChoices = null;
+let productSettingChoices = null;
 
 const API_BASE = '/api';
 let token = localStorage.getItem('token');
@@ -88,8 +89,7 @@ async function loadProducts(page = 1, query = '') {
         if(tbody === null) return;
         if(products.length == 0) {
             showNoProducts(); return;
-        }
-        
+        }        
         tbody.innerHTML = products.map(product => `
             <tr>
                 <td><strong>${product.name}</strong></td>
@@ -230,10 +230,10 @@ async function loadLicenses(page = 1 , query = '') {
         const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#licenses-table tbody');
         
+        if(tbody === null) return;
         if(licenses.length == 0) {
             showNoLicenses(); return;
-        }
-        if(tbody === null) return;
+        }        
 
         tbody.innerHTML = licenses.map(license => `
             <tr class="fade-in">
@@ -447,15 +447,29 @@ async function updateProductSelect() {
         const products = response.data.products;
         const select = document.getElementById('product-select');
         const select_search = document.getElementById('product-search-select');
-        if(!select || !select_search) return;
-        select.innerHTML = '<option value="">Select Product...</option>' + 
-            products.map(product => 
-                `<option value="${product.id}">${product.name}</option>`
-            ).join('');
-        select_search.innerHTML = '<option value="">Select Product...</option>' + 
-            products.map(product => 
-                `<option value="${product.id}">${product.name}</option>`
-            ).join('');
+        const setting_select = document.getElementById('setting-product-select');
+        
+        if(select !== null)
+        {
+            select.innerHTML = '<option value="">Select Product...</option>' + 
+                products.map(product => 
+                    `<option value="${product.id}">${product.name}</option>`
+                ).join('');
+        }
+        if(select_search !== null){
+            select_search.innerHTML = '<option value="">Select Product...</option>' + 
+                products.map(product => 
+                    `<option value="${product.id}">${product.name}</option>`
+                ).join('');
+        }
+        if(setting_select !== null)
+        {
+            console.log(setting_select)
+            setting_select.innerHTML = '<option value="">Select Product...</option>' + 
+                products.map(product =>
+                    `<option value="${product.id}">${product.name}</option>`
+                ).join('');
+        }
         // Destroy previous Choices instance if exists
         if (productChoices) {
             productChoices.destroy();
@@ -463,9 +477,14 @@ async function updateProductSelect() {
         if(productSearchChoices){
             productSearchChoices.destroy();
         }
+        if(productSettingChoices){
+            productSettingChoices.destroy();
+        }
         // Initialize Choices after options are set
-        productChoices = new Choices(select, { searchEnabled: true });
-        productSearchChoices = new Choices(select_search, {searchEnabled : true});
+        if(select) productChoices = new Choices(select, { searchEnabled: true });
+        if(select_search) productSearchChoices = new Choices(select_search, {searchEnabled : true});
+        if(setting_select) productSettingChoices = new Choices(setting_select, {searchEnabled : true});
+
     } catch (error) {
         console.error('Failed to update product select:', error);
     }
@@ -807,7 +826,7 @@ async function loadSettings(page = 1, query = '') {
                 <td>${setting.number_of_credits}</td>
                 <td>${setting.license_duration_hours}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.key}')">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.id}')">
                         Edit
                     </button>                    
                 </td>
@@ -838,12 +857,8 @@ async function createProductSetting() {
             number_of_credits: parseInt(numberOfCredits),
             license_duration_hours: parseInt(licenseDurationHours)
         });
-        
+                
         showAlert('Product setting created successfully!', 'success');
-        bootstrap.Modal.getInstance(document.getElementById('settingModal')).hide();
-        
-        // Reset form
-        document.getElementById('setting-form').reset();
         
         // Reload settings
         await loadSettings();
@@ -853,8 +868,82 @@ async function createProductSetting() {
     }
 }
 
-function editSetting(settingKey) {
-    window.alert('Edit setting feature is not implemented yet.');
+// Edit product: show a modal with current product info and allow update
+async function editSetting(productId) {
+    try {
+        // Fetch current product data
+        const response = await axios.get(`${API_BASE}/settings/${productId}`);
+        const setting = response.data;
+        console.log(setting);
+        if (!setting) {
+            showAlert('Setting not found', 'danger');
+            return;
+        }
+
+        // Create modal HTML
+        const modalId = 'editSettingModal';
+        let modalEl = document.getElementById(modalId);
+        if (modalEl) modalEl.remove(); // Remove existing modal if present
+
+        const modalHtml = `
+            <div class="modal fade" id="${modalId}" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form id="edit-setting-form">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Edit Setting: ${setting.product_name}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                
+                                <div class="mb-3">
+                                    <label for="edit-setting-credit-number" class="form-label">Number of Credits</label>
+                                    <input type="text" class="form-control" id="edit-setting-credit-number" value="${setting.number_of_credits || ''}">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="edit-setting-time-duration" class="form-label">Trial Period(h)</label>
+                                    <input type="number" class="form-control" id="edit-setting-time-duration" value="${setting.license_duration_hours}" min="1" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById(modalId));
+        modal.show();
+
+        // Handle form submission
+        document.getElementById('edit-setting-form').onsubmit = async function(e) {
+            e.preventDefault();
+            try {
+                await axios.put(`${API_BASE}/settings/${productId}`, {
+                    number_of_credits: parseInt(document.getElementById('edit-setting-credit-number').value),
+                    license_duration_hours: parseInt(document.getElementById('edit-setting-time-duration').value),
+                });
+                showAlert('Setting updated successfully!', 'success');
+                modal.hide();
+                await loadSettings();
+            } catch (error) {
+                showAlert(error.response?.data?.error || 'Failed to update setting', 'danger');
+            }
+        };
+
+        // Clean up modal after hide
+        document.getElementById(modalId).addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+
+    } catch (error) {
+        showAlert('Failed to load setting for editing', 'danger');
+    }
 }
 
 function showSettingsLoading() {

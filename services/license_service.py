@@ -3,14 +3,14 @@ from models.license import License
 from models.product import Product
 from utils.hash_utils import hash_license_key
 
-def create_license(product_id, user_id, credit_number, machine_code,expires_days=30):
+def create_license(product_id, user_id, credit_number, machine_code,expires_hours=24):
     """Create a new license for a product."""
     # Verify product exists
     product = Product.get_by_id(product_id)
     if not product:
         return {'success': False, 'error': 'Product not found'}
     
-    return License.create(product_id, user_id, credit_number , machine_code, expires_days)
+    return License.create(product_id, user_id, credit_number , machine_code, expires_hours)
 
 def get_licenses(search_query="", page=1, per_page=10):
     """Get all licenses with pagination."""

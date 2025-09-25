@@ -190,3 +190,69 @@ def backup_licenses():
         as_attachment=True,
         download_name='licenses_backup.xlsx'
     )
+
+@bp.route('/automate', methods=['POST'])
+@rate_limited(limit='10 per minute')  # Limit automated license creation
+@jwt_required()
+@validate_json({
+    'product_name': str,
+    'user_id': str,
+    'machine_code': str,
+})
+def automate_license_route():
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.get_json()
+    if contains_xss(data.get('user_id', '')) or contains_xss(data.get('machine_code', '')) or contains_xss(data.get('product_name', '')):
+        return jsonify({'error': 'Invalid input detected'}), 400
+    
+    # check if product exists
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM products WHERE name = ?", (data['product_name'],))
+    product = cursor.fetchone()
+    if not product:
+        conn.close()
+        return jsonify({'error': 'Product not found'}), 404
+    
+    product_id = product['id']
+    conn.close()
+
+    #check if any of the user_id, product_name, machine_code already exists in active license
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) AS count FROM licenses
+        WHERE status = 'active' AND (user_id = ? OR machine_code = ?)
+    """, (data['user_id'], data['machine_code']))
+    result = cursor.fetchone()
+    conn.close()
+    if result['count'] > 0:
+        return jsonify({'error': 'Active license already exists for given user_id or machine_code'}), 400
+    
+    # get number_of_credits, license_duration_hours data for the product
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT number_of_credits, license_duration_hours FROM settings WHERE product_id = ?", (product_id,))
+    setting = cursor.fetchone()
+    conn.close()
+    if not setting:
+        return jsonify({'error': 'Settings not found for the product'}), 404
+    
+    number_of_credits = setting['number_of_credits'] if setting['number_of_credits'] is not None else 0
+    license_duration_hours = setting['license_duration_hours'] if setting['license_duration_hours'] is not None else 24  # default a day
+    expires_hours = max(1, license_duration_hours // 24)  # at least 1 day
+
+    result = create_license(
+        product_id=product_id,
+        user_id=data['user_id'],
+        credit_number=number_of_credits,
+        machine_code=data['machine_code'],
+        expires_hours=expires_hours
+    )
+    
+    if result['success']:
+        return jsonify(result), 201
+    return jsonify(result), 400

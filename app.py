@@ -140,16 +140,14 @@ def create_app():
             from models.database import get_db_connection
             with get_db_connection() as conn:
                 c = conn.cursor()
-                c.execute('SELECT username, first_name, last_name, credit_number, machine_code, role FROM users WHERE username = ?', (user,))
+                c.execute('SELECT username, first_name, last_name, role FROM users WHERE username = ?', (user,))
                 row = c.fetchone()
                 if row:
                     user = {
                         'username': row[0],
                         'first_name': row[1],
-                        'last_name': row[2],
-                        'credit_number': row[3],
-                        'machine_code': row[4],                        
-                        'role': row[5]
+                        'last_name': row[2],                     
+                        'role': row[3]
                     }
                 else:
                     user = None

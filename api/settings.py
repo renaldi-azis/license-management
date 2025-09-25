@@ -35,9 +35,9 @@ def get_all_settings_route():
     
     query = request.args.get('query', '').strip()
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
+    per_page = request.args.get('per_page', 5, type=int)
 
-    settings, total  = get_settings(query, page, per_page)
+    settings, total  = get_settings(search_query=query, page=page, per_page=per_page)
     total_pages = (total + per_page - 1) // per_page
     return jsonify({
         'settings': settings,
@@ -46,7 +46,7 @@ def get_all_settings_route():
             'per_page': per_page,
             'total': total_pages
         }
-    }), 200
+    })
 
 @bp.route('/<int:product_id>', methods=['GET'])
 @jwt_required()

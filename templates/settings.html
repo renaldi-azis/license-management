@@ -5,12 +5,13 @@
 {% block content %}
 
 <!-- Create Setting Section -->
+
 <div class="table-container" id="create-setting">
     <div class="table-header">
         <div class="table-title">Create Setting</div>
     </div>
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="mb-3">
             <label for="setting-product-select" class="form-label">Setting</label>
                 <div class="select-wrapper">
@@ -21,20 +22,20 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Number of Credits</label>
-            <input type="number" class="form-control" id="setting-credits" value="1" min="1">
+            <input type="number" class="form-control" id="setting-number-of-credits" value="1" min="1">
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label class="form-label">Trial Period (hours)</label>
-            <input type="number" class="form-control" id="setting-trial-period" value="24" min="0">
+            <input type="number" class="form-control" id="setting-license-duration-hours" value="24" min="0">
         </div>
-        <div class="col-md-4" style="text-align: center;">
+        <div class="col-md-3" style="text-align: center;">
             <label class="form-label">&nbsp;</label>
             <div>
                 <button class="btn btn-success btn-responsive" onclick="createProductSetting()">
                     <i class="fas fa-plus-circle"></i> 
-                    <span class="btn-text">Create Product Setting</span>
+                    <span class="btn-text">Create Setting</span>
                 </button>
             </div>
         </div>

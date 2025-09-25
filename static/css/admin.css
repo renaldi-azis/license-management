@@ -117,6 +117,7 @@ body {
     text-align: center;
     padding: 50px 20px;
     color: var(--gray);
+    user-select: none;
 }
 
 .no-data-icon {
