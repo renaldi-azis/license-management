@@ -3,6 +3,7 @@
 let productsCurrentPage = 1;
 let licensesCurrentPage = 1;
 let productChoices = null;
+let productSearchChoices = null;
 
 const API_BASE = '/api';
 let token = localStorage.getItem('token');
@@ -294,7 +295,7 @@ async function loadLicenses(page = 1 , query = '') {
 async function createLicense() {
     const productId = document.getElementById('product-select').value;
     const userId = document.getElementById('user-id').value;
-    const expiresDays = document.getElementById('expires-days').value;
+    const expiresHours = document.getElementById('expires-hours').value;
     const credit_number = document.getElementById('credit-number').value;
     const machine_code = document.getElementById('machine-code').value;
     
@@ -314,7 +315,7 @@ async function createLicense() {
             user_id: userId,
             credit_number: credit_number || 'None',
             machine_code: machine_code || 'None',
-            expires_days: parseInt(expiresDays)
+            expires_days: parseInt(expiresHours)
         });
         
         const result = response.data;
@@ -451,18 +452,26 @@ async function updateProductSelect() {
         const response = await axios.get(`${API_BASE}/products/all`);
         const products = response.data.products;
         const select = document.getElementById('product-select');
-        if(!select) return;
+        const select_search = document.getElementById('product-search-select');
+        if(!select || !select_search) return;
         select.innerHTML = '<option value="">Select Product...</option>' + 
             products.map(product => 
                 `<option value="${product.id}">${product.name}</option>`
             ).join('');
-        
+        select_search.innerHTML = '<option value="">Select Product...</option>' + 
+            products.map(product => 
+                `<option value="${product.id}">${product.name}</option>`
+            ).join('');
         // Destroy previous Choices instance if exists
         if (productChoices) {
             productChoices.destroy();
         }
+        if(productSearchChoices){
+            productSearchChoices.destroy();
+        }
         // Initialize Choices after options are set
         productChoices = new Choices(select, { searchEnabled: true });
+        productSearchChoices = new Choices(select_search, {searchEnabled : true});
     } catch (error) {
         console.error('Failed to update product select:', error);
     }
@@ -687,7 +696,10 @@ if(document.getElementById('search-license-input'))
     document.getElementById('search-license-input').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
-            const query = e.target.value.trim();
+            const select = document.getElementById('product-search-select');
+            const selectedValues = Array.from(select.selectedOptions).map(option => option.innerHTML);
+            const key_search = e.target.value.trim();
+            const query = selectedValues + ',' + key_search;
             loadLicenses(1, query);
         }
     });
@@ -700,6 +712,18 @@ if(document.getElementById('search-product-input'))
             loadProducts(1, query);
         }
     });
+
+if(document.getElementById('product-search-select'))
+    document.getElementById('product-search-select').addEventListener('change',function(e){
+        const select = document.getElementById('product-search-select');
+        const selectedValues = Array.from(select.selectedOptions).map(option => option.innerHTML);
+        console.log(document.getElementById('search-license-input').value);
+        const key_search = document.getElementById('search-license-input').value.trim();
+        const query = selectedValues + ',' + key_search;
+        console.log(query);
+        loadLicenses(1, query);
+        return selectedValues;
+    })
 
 // Attach to logout link if using JS navigation
 document.addEventListener('DOMContentLoaded', function() {
@@ -744,4 +768,25 @@ async function showLicenseDetail(licenseKey) {
 // Clean up modals on page unload
 window.addEventListener('beforeunload', function() {
     document.querySelectorAll('.modal').forEach(modal => modal.remove());
+});
+
+
+// Toggle dropdown menu
+document.getElementById('userProfileDropdown').addEventListener('click', function(e) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('show');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function() {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+    }
+});
+
+// Prevent dropdown from closing when clicking inside it
+document.getElementById('userDropdown').addEventListener('click', function(e) {
+    e.stopPropagation();
 });

@@ -110,10 +110,13 @@
         <div class="col-md-4">
             <div class="mb-3">
             <label for="product-select" class="form-label">Product</label>
-            <select id="product-select" class="form-select">
-                <option value="">Select Product...</option>
-                <!-- options will be populated by JS -->
-            </select>
+                <div class="select-wrapper">
+                    <select id="product-select" class="form-select">
+                        <option value="">Select Product...</option>
+                        <!-- options will be populated by JS -->
+                    </select>
+                    <!-- <i class="fas fa-chevron-down select-arrow"></i> -->
+                </div>
             </div>
         </div>
         <div class="col-md-4">
@@ -121,8 +124,8 @@
             <input type="text" class="form-control" id="user-id" placeholder="user123">
         </div>
         <div class="col-md-4">
-            <label class="form-label">Expires (days)</label>
-            <input type="number" class="form-control" id="expires-days" value="30" min="1">
+            <label class="form-label">Expires (hours)</label>
+            <input type="number" class="form-control" id="expires-hours" value="24" min="1">
         </div>
         <div class="col-md-5">
             <label for="credit-number" class="form-label">
@@ -153,13 +156,22 @@
 <div class="table-container">
     <div class="table-header">
         <div class="table-title">All Licenses</div>
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="search-license-input" placeholder="Search...">
+        <div class="table-controls">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-license-input" placeholder="Search...">
+            </div>
+            <div class="select-wrapper multiple-select">
+                <select id="product-search-select" class="form-select" multiple>
+                    <option value="">Select Product...</option>
+                    <!-- options will be populated by JS -->
+                </select>
+                <span class="multiple-select-indicator">Multiple</span>
+            </div>
+            <button class="btn btn-primary" id="license-backup-btn" onclick="backupLicenses()">
+                <i class="fas fa-file-export"></i> <span class="btn-text">Backup Licenses</span>
+            </button>
         </div>
-        <button class="btn btn-primary" id="license-backup-btn" onclick="backupLicenses()">
-            <i class="fas fa-file-export"></i> Backup Licenses
-        </button>
     </div>
     <div class="table-responsive">
         <table class="table" id="licenses-table" style="display: none;">
@@ -251,6 +263,5 @@
     </div>
 </div>
 
-<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 
 {% endblock %}

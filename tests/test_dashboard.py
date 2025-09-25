@@ -128,12 +128,12 @@ class DashboardTest:
         first_option.click()
         
         user_id = self.driver.find_element(By.ID, "user-id")
-        expires_days = self.driver.find_element(By.ID, "expires-days")
+        expires_hours = self.driver.find_element(By.ID, "expires-hours")
         
         user_id.clear()
         user_id.send_keys("dashboard-test-user")
-        expires_days.clear()
-        expires_days.send_keys("60")
+        expires_hours.clear()
+        expires_hours.send_keys("60")
         
         # Click create license button
         create_license_btn = self.wait.until(EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Create License')]")))

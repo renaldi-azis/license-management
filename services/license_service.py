@@ -17,23 +17,28 @@ def get_licenses(search_query="", page=1, per_page=10):
     from models.database import get_db_connection
     
     offset = (page - 1) * per_page
+    # Get keywords from search_query ignore empty strings
+    keywords = [kw.strip() for kw in search_query.split(',') if kw.strip()]
     
-    # Get licenses with product info
-       
     with get_db_connection() as conn:
         c = conn.cursor()
-
-        # get total count that matches search query
-        if search_query:
-            # search by userId, machine_code, or partial key
-            c.execute('''
-                SELECT COUNT(*) 
-                FROM licenses l
+        if(keywords):
+            query_conditions = []
+            params = []
+            for kw in keywords:
+                condition = "(l.user_id LIKE ? OR l.machine_code LIKE ? OR l.key LIKE ? OR p.name LIKE ?)"
+                query_conditions.append(condition)
+                like_kw = f'%{kw}%'
+                params.extend([like_kw, like_kw, like_kw, like_kw])
+            where_clause = " OR ".join(query_conditions)
+            count_query = f'''
+                SELECT COUNT(*) FROM licenses l
                 LEFT JOIN products p ON l.product_id = p.id
-                WHERE l.user_id LIKE ? OR l.machine_code LIKE ? OR l.key LIKE ?
-            ''', (f'%{search_query}%', f'%{search_query}%', f'%{search_query}%'))  
+                WHERE {where_clause}
+            '''
+            c.execute(count_query, params)
         else:
-            c.execute('SELECT COUNT(*) FROM licenses')
+            c.execute("SELECT COUNT(*) FROM licenses")
         total = c.fetchone()[0]
 
         # update licenses expired status
@@ -44,15 +49,19 @@ def get_licenses(search_query="", page=1, per_page=10):
         ''', (datetime.now(),))
         conn.commit()
         
-        if search_query:
-            c.execute('''
+        if(keywords):
+            data_query = f'''
                 SELECT l.*, p.name as product_name
                 FROM licenses l
                 LEFT JOIN products p ON l.product_id = p.id
-                WHERE l.user_id LIKE ? OR l.machine_code LIKE ? OR l.key LIKE ?
+                WHERE {where_clause}
                 ORDER BY l.created_at DESC
                 LIMIT ? OFFSET ?
-            ''', (f'%{search_query}%', f'%{search_query}%', f'%{search_query}%', per_page, offset))
+            '''
+            params.extend([per_page, offset])
+            print("Data Query:", data_query)
+            print("Params:", params)
+            c.execute(data_query, params)
         else:
             c.execute('''
                 SELECT l.*, p.name as product_name
@@ -60,7 +69,7 @@ def get_licenses(search_query="", page=1, per_page=10):
                 LEFT JOIN products p ON l.product_id = p.id
                 ORDER BY l.created_at DESC
                 LIMIT ? OFFSET ?
-            ''', (per_page, offset))
+            ''', (per_page, offset)) 
 
         licenses = []
         for row in c.fetchall():
@@ -117,8 +126,8 @@ def get_license_stats():
         c.execute("SELECT AVG(usage_count) as avg_usage, MAX(usage_count) as max_usage FROM licenses")
         usage_stats = c.fetchone()
         
-        # Recent activity (last 7 days)
-        week_ago = datetime.now() - timedelta(days=7)
+        # Recent activity (last 3 days)
+        week_ago = datetime.now() - timedelta(days=3)
         c.execute('''
             SELECT COUNT(*) as recent_validations
             FROM usage_logs 

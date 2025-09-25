@@ -24,8 +24,8 @@
             <input type="text" class="form-control" id="user-id" placeholder="user123">
         </div>
         <div class="col-md-4">
-            <label class="form-label">Expires (days)</label>
-            <input type="number" class="form-control" id="expires-days" value="30" min="1">
+            <label class="form-label">Expires (hours)</label>
+            <input type="number" class="form-control" id="expires-hours" value="24" min="1">
         </div>
         <div class="col-md-5">
             <label for="credit-number" class="form-label">
@@ -66,6 +66,10 @@
             <i class="fas fa-search"></i>
             <input type="text" id="search-license-input" placeholder="Search...">
         </div>
+        <select id="product-search-select" class="form-select" multiple>
+            <option value="">Select Product...</option>
+            <!-- options will be populated by JS -->
+        </select>
         <button class="btn btn-primary" id="license-backup-btn" onclick="backupLicenses()">
             <i class="fas fa-file-export"></i> Backup Licenses
         </button>
@@ -109,6 +113,22 @@
     </nav>
 </div>
 
+<!-- License Detail Modal -->
+<div class="modal fade" id="licenseDetailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">License Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="license-detail-body">
+                <!-- Details will be loaded here by JS -->
+                <div class="text-center text-muted">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 {% endblock %}

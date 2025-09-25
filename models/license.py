@@ -3,14 +3,14 @@ from datetime import datetime, timedelta
 
 class License:
     @staticmethod
-    def create(product_id, user_id, credit_number, machine_code, expires_days=30, license_key=None):
+    def create(product_id, user_id, credit_number, machine_code, expires_hours=24, license_key=None):
         """Create a new license."""
         from utils.hash_utils import generate_license_key
         
         if not license_key:
             license_key = generate_license_key()
         
-        expires_at = datetime.now() + timedelta(days=expires_days)
+        expires_at = datetime.now() + timedelta(hours=expires_hours)
           
         with get_db_connection() as conn:
             c = conn.cursor()
