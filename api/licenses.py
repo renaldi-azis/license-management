@@ -192,7 +192,6 @@ def backup_licenses():
     )
 
 @bp.route('/automate', methods=['POST'])
-@rate_limited(limit='10 per minute')  # Limit automated license creation
 @jwt_required()
 @validate_json({
     'product_name': str,
