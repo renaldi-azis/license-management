@@ -77,23 +77,14 @@ async function loadStats() {
 // Load products table
 async function loadProducts(page = 1, query = '') {
     try {
+        showProductsLoading();
         const res = await axios.get(`${API_BASE}/products?page=${page}&q=${encodeURIComponent(query)}`);
         const products = res.data.products || [];
         const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#products-table tbody');
-        const noDataDiv = document.getElementById('products-no-data');
-        if(tbody === null) return;
         if(products.length == 0) {
-            document.getElementById('products-table').style.display = 'none';
-            document.getElementById('products-pagination').style.display = 'none';
-            noDataDiv.style.display = 'block';
-        }
-        else {
-            document.getElementById('products-table').style.display = 'table';
-            document.getElementById('products-pagination').style.display = 'flex';
-            noDataDiv.style.display = 'none';
-        }
-        
+            showNoProducts(); return;
+        }        
         tbody.innerHTML = products.map(product => `
             <tr>
                 <td><strong>${product.name}</strong></td>
@@ -116,10 +107,11 @@ async function loadProducts(page = 1, query = '') {
                 </td>
             </tr>
         `).join('');
-         renderPagination('products-pagination', pagination.page, pagination.total, (p) => {
+        renderPagination('products-pagination', pagination.page, pagination.total, (p) => {
             productsCurrentPage = p;
             loadProducts(p);
         });
+        showProductsTable();
     } catch (error) {
         console.error('Failed to load products:', error);
     }
@@ -226,6 +218,7 @@ async function removeUser(username) {
 // Load licenses table
 async function loadLicenses(page = 1 , query = '') {
     try {
+        showProductsLoading();
         const res = await axios.get(`${API_BASE}/licenses?page=${page}&q=${encodeURIComponent(query)}`);
         const licenses = res.data.licenses || [];
         const pagination = res.data.pagination || { page: 1, total: 1 };
@@ -233,15 +226,9 @@ async function loadLicenses(page = 1 , query = '') {
         const noDataDiv = document.getElementById('licenses-no-data');
         if(tbody === null) return;
         if(licenses.length == 0) {
-            document.getElementById('licenses-table').style.display = 'none';
-            document.getElementById('licenses-pagination').style.display = 'none';
-            noDataDiv.style.display = 'block';
+            showNoProducts(); return;
         }
-        else {
-            document.getElementById('licenses-table').style.display = 'table';
-            document.getElementById('licenses-pagination').style.display = 'flex';
-            noDataDiv.style.display = 'none';
-        }
+
         tbody.innerHTML = licenses.map(license => `
             <tr class="fade-in">
                 <td>
@@ -286,6 +273,7 @@ async function loadLicenses(page = 1 , query = '') {
             licensesCurrentPage = p;
             loadLicenses(p);
         });
+        showLicensesTable();
     } catch (error) {
         console.error('Failed to load licenses:', error);
     }
@@ -790,3 +778,51 @@ document.addEventListener('click', function() {
 document.getElementById('userDropdown').addEventListener('click', function(e) {
     e.stopPropagation();
 });
+
+// Show loading state for products
+function showProductsLoading() {
+    document.getElementById('products-loading').style.display = 'flex';
+    document.getElementById('products-table').style.display = 'none';
+    document.getElementById('products-no-data').style.display = 'none';
+    document.getElementById('products-pagination').style.display = 'none';
+}
+
+// Show products table
+function showProductsTable() {
+    document.getElementById('products-loading').style.display = 'none';
+    document.getElementById('products-table').style.display = 'table';
+    document.getElementById('products-no-data').style.display = 'none';
+    document.getElementById('products-pagination').style.display = 'flex';
+}
+
+// Show no products state
+function showNoProducts() {
+    document.getElementById('products-loading').style.display = 'none';
+    document.getElementById('products-table').style.display = 'none';
+    document.getElementById('products-no-data').style.display = 'flex';
+    document.getElementById('products-pagination').style.display = 'none';
+}
+
+// Show loading state for licenses
+function showLicensesLoading() {
+    document.getElementById('licenses-loading').style.display = 'flex';
+    document.getElementById('licenses-table').style.display = 'none';
+    document.getElementById('licenses-no-data').style.display = 'none';
+    document.getElementById('licenses-pagination').style.display = 'none';
+}
+
+// Show licenses table
+function showLicensesTable() {
+    document.getElementById('licenses-loading').style.display = 'none';
+    document.getElementById('licenses-table').style.display = 'table';
+    document.getElementById('licenses-no-data').style.display = 'none';
+    document.getElementById('licenses-pagination').style.display = 'flex';
+}
+
+// Show no licenses state
+function showNoLicenses() {
+    document.getElementById('licenses-loading').style.display = 'none';
+    document.getElementById('licenses-table').style.display = 'none';
+    document.getElementById('licenses-no-data').style.display = 'flex';
+    document.getElementById('licenses-pagination').style.display = 'none';
+}
