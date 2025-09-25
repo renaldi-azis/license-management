@@ -806,7 +806,7 @@ function showProductsTable() {
 function showNoProducts() {
     document.getElementById('products-loading').style.display = 'none';
     document.getElementById('products-table').style.display = 'none';
-    document.getElementById('products-no-data').style.display = 'block';
+    document.getElementById('products-no-data').style.display = 'flex';
     document.getElementById('products-pagination').style.display = 'none';
 }
 
@@ -831,7 +831,7 @@ function showLicensesTable() {
 function showNoLicenses() {
     document.getElementById('licenses-loading').style.display = 'none';
     document.getElementById('licenses-table').style.display = 'none';
-    document.getElementById('licenses-no-data').style.display = 'block';
+    document.getElementById('licenses-no-data').style.display = 'flex';
     document.getElementById('licenses-pagination').style.display = 'none';
 }
 
@@ -854,6 +854,6 @@ function showNoUsers(){
     
     document.getElementById('users-loading').style.display = 'none';
     document.getElementById('users-table').style.display = 'none';
-    document.getElementById('users-no-data').style.display = 'block';
+    document.getElementById('users-no-data').style.display = 'flex';
     document.getElementById('users-pagination').style.display = 'none';
 }
