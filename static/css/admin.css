@@ -435,6 +435,27 @@ body {
 }
 
 /* Tables */
+
+/* Ensure consistent spacing and heights */
+.table-responsive {
+    position: relative;
+    min-height: 400px;
+}
+
+/* Smooth transitions for state changes */
+.loading-state,
+.no-data,
+.table {
+    transition: opacity 0.3s ease;
+}
+
+/* Make sure the container maintains consistent height */
+.table-container .table-responsive {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: white;
+}
+
 .table-container {
     background: white;
     border-radius: var(--card-radius);

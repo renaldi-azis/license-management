@@ -84,7 +84,8 @@ async function loadProducts(page = 1, query = '') {
         const tbody = document.querySelector('#products-table tbody');
         if(products.length == 0) {
             showNoProducts(); return;
-        }        
+        }
+        if(tbody === null) return;
         tbody.innerHTML = products.map(product => `
             <tr>
                 <td><strong>${product.name}</strong></td>
@@ -161,6 +162,7 @@ async function loadUsers(page = 1) {
             usersCurrentPage = p;
             loadUsers(p);
         });
+        showUsersTable();
     }catch (error) {
         console.error('Failed to load users:', error);
     }
@@ -218,16 +220,16 @@ async function removeUser(username) {
 // Load licenses table
 async function loadLicenses(page = 1 , query = '') {
     try {
-        showProductsLoading();
+        showLicensesLoading();
         const res = await axios.get(`${API_BASE}/licenses?page=${page}&q=${encodeURIComponent(query)}`);
         const licenses = res.data.licenses || [];
         const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#licenses-table tbody');
-        const noDataDiv = document.getElementById('licenses-no-data');
-        if(tbody === null) return;
+        
         if(licenses.length == 0) {
-            showNoProducts(); return;
+            showNoLicenses(); return;
         }
+        if(tbody === null) return;
 
         tbody.innerHTML = licenses.map(license => `
             <tr class="fade-in">
@@ -599,6 +601,10 @@ async function viewProductStats(productId) {
         // Create modal with stats
         const modal = createStatsModal(`Product Stats: ${stats.product.name}`, stats);
         modal.show();
+        // Destroy modal
+        modal._element.addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
     } catch (error) {
         showAlert('Failed to load product stats', 'danger');
     }
@@ -781,6 +787,7 @@ document.getElementById('userDropdown').addEventListener('click', function(e) {
 
 // Show loading state for products
 function showProductsLoading() {
+    if(document.getElementById('products-loading') === null) return;
     document.getElementById('products-loading').style.display = 'flex';
     document.getElementById('products-table').style.display = 'none';
     document.getElementById('products-no-data').style.display = 'none';
@@ -799,12 +806,13 @@ function showProductsTable() {
 function showNoProducts() {
     document.getElementById('products-loading').style.display = 'none';
     document.getElementById('products-table').style.display = 'none';
-    document.getElementById('products-no-data').style.display = 'flex';
+    document.getElementById('products-no-data').style.display = 'block';
     document.getElementById('products-pagination').style.display = 'none';
 }
 
 // Show loading state for licenses
 function showLicensesLoading() {
+    if(document.getElementById('licenses-loading') === null) return;
     document.getElementById('licenses-loading').style.display = 'flex';
     document.getElementById('licenses-table').style.display = 'none';
     document.getElementById('licenses-no-data').style.display = 'none';
@@ -823,6 +831,29 @@ function showLicensesTable() {
 function showNoLicenses() {
     document.getElementById('licenses-loading').style.display = 'none';
     document.getElementById('licenses-table').style.display = 'none';
-    document.getElementById('licenses-no-data').style.display = 'flex';
+    document.getElementById('licenses-no-data').style.display = 'block';
     document.getElementById('licenses-pagination').style.display = 'none';
+}
+
+function showUsersLoading(){
+    if(document.getElementById('users-loading') === null) return;
+    document.getElementById('users-loading').style.display = 'flex';
+    document.getElementById('users-table').style.display = 'none';
+    document.getElementById('users-no-data').style.display = 'none';
+    document.getElementById('users-pagination').style.display = 'none';
+}
+
+function showUsersTable(){
+    document.getElementById('users-loading').style.display = 'none';
+    document.getElementById('users-table').style.display = 'table';
+    document.getElementById('users-no-data').style.display = 'none';
+    document.getElementById('users-pagination').style.display = 'flex';
+}
+
+function showNoUsers(){
+    
+    document.getElementById('users-loading').style.display = 'none';
+    document.getElementById('users-table').style.display = 'none';
+    document.getElementById('users-no-data').style.display = 'block';
+    document.getElementById('users-pagination').style.display = 'none';
 }

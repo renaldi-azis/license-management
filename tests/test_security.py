@@ -19,7 +19,7 @@ class SecurityTestSuite:
         # Login as admin and set JWT token
         login_resp = self.session.post(
             f"{self.base_url}/api/auth/login",
-            json={"username": self.admin_username, "password": self.admin_password, 'credit_number': '4111111111111111', 'machine_code': 'test-machine-id'}
+            json={"username": self.admin_username, "password": self.admin_password}
         )
         assert login_resp.status_code == 200, "Login failed for security test"
         token = login_resp.json().get("access_token")

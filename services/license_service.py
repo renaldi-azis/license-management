@@ -59,8 +59,6 @@ def get_licenses(search_query="", page=1, per_page=10):
                 LIMIT ? OFFSET ?
             '''
             params.extend([per_page, offset])
-            print("Data Query:", data_query)
-            print("Params:", params)
             c.execute(data_query, params)
         else:
             c.execute('''

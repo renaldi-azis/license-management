@@ -41,7 +41,7 @@ def register():
 def login():
     if request.method == 'POST':
         data = request.get_json()
-        username, password, credit_number, machine_code= data['username'], data['password'], data['credit_number'], data['machine_code']
+        username, password = data['username'], data['password']
         # if not recaptcha.verify():
         #     flash("reCAPTCHA validation failed. Please try again.", "danger")
         #     return render_template("login.html")
@@ -55,11 +55,11 @@ def login():
             if row:
                 expected_password_hash = row[0]
                 # update credit_number and machine_code
-                if(machine_code is None or machine_code.strip() == ''):
-                    machine_code = 'Not Provided'
-                if(credit_number is None or credit_number.strip() == ''):
-                    credit_number = 'Not Provided'
-                update_user(username, credit_number=credit_number, machine_code=machine_code)
+                # if(machine_code is None or machine_code.strip() == ''):
+                #     machine_code = 'Not Provided'
+                # if(credit_number is None or credit_number.strip() == ''):
+                #     credit_number = 'Not Provided'
+                # update_user(username, credit_number=credit_number, machine_code=machine_code)
             else:
                 expected_password_hash = None      
 

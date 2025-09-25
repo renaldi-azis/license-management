@@ -67,7 +67,8 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE NOT NULL,
                 description TEXT,
-                max_devices INTEGER DEFAULT 1,
+                number_of_credits INTEGER DEFAULT 0,
+                license_duration_hours INTEGER DEFAULT 24,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -111,8 +112,6 @@ def init_db():
                 first_name TEXT,
                 last_name TEXT,
                 role TEXT NOT NULL DEFAULT 'user',
-                credit_number TEXT DEFAULT 'Not Provided',
-                machine_code TEXT DEFAULT 'Not Provided',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')

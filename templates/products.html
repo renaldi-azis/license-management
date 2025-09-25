@@ -19,6 +19,13 @@
         
     </div>
     <div class="table-responsive">
+        <!-- Loading State -->
+        <div id="products-loading" class="loading-state">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <div class="loading-text">Loading Products...</div>
+        </div>
         <table class="table" id="products-table" style="display: none;">
             <thead>
                 <tr>
@@ -30,22 +37,22 @@
                 </tr>
             </thead>
             <tbody>
-
+                <!-- Filled by JS -->
             </tbody>
-            <!-- No Data State for Products -->
-            <div id="products-no-data" class="no-data" >
-                <div class="no-data-icon">
-                    <i class="fas fa-cube"></i>
-                </div>
-                <div class="no-data-title">No Products Found</div>
-                <div class="no-data-description">
-                    You haven't created any products yet. Add your first product to start managing licenses.
-                </div>
-                <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
-                    <i class="fas fa-plus"></i> Add Your First Product
-                </button> -->
-            </div>        
         </table>
+         <!-- No Data State for Products -->
+        <div id="products-no-data" class="no-data" >
+            <div class="no-data-icon">
+                <i class="fas fa-cube"></i>
+            </div>
+            <div class="no-data-title">No Products Found</div>
+            <div class="no-data-description">
+                You haven't created any products yet. Add your first product to start managing licenses.
+            </div>
+            <!-- <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#productModal">
+                <i class="fas fa-plus"></i> Add Your First Product
+            </button> -->
+        </div>        
     </div>
     <!-- Products Pagination -->
     <nav>

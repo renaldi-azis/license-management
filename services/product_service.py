@@ -22,9 +22,22 @@ def get_products(search_query="", page=1, per_page=10):
         rows = c.fetchall()
         products = [dict(row) for row in rows]
         # Optionally, add stats to each product here
+            
+        # Add license counts
+        for product in products:
+            c.execute('''
+                SELECT COUNT(*) as total, 
+                        SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active
+                FROM licenses WHERE product_id = ?
+            ''', (product['id'],))
+            counts = c.fetchone()
+            product['total_licenses'] = counts['total']
+            product['active_licenses'] = counts['active']
+
         return products, total
 
 def update_product(product_id, **kwargs):
+
     """Update product information."""
     return Product.update(product_id, **kwargs)
 
