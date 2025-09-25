@@ -500,8 +500,8 @@ function updateStatsAnimation() {
 
 // Setup real-time updates
 function setupRealTimeUpdates() {
-    // Update stats every 30 seconds
-    setInterval(loadStats, 60 * 1000);
+    // Update stats every 30 minutes
+    setInterval(loadStats, 30 * 60 * 1000);
     
     // Listen for visibility change to refresh when tab becomes active
     document.addEventListener('visibilitychange', function() {

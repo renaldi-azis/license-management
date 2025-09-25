@@ -62,7 +62,7 @@ def suspicious_activity_check(ip_address):
             if spam_score and int(spam_score) > 100:
                 return True
         
-            # Check rapid requests (more than 50 in 5 minutes)
+            # Check rapid requests (more than 120 in 5 minutes)
             five_min_ago = get_current_time() - 300  # 5 minutes ago
             recent_requests = redis_client.zcount(
                 f"requests:{ip_address}",
@@ -70,7 +70,7 @@ def suspicious_activity_check(ip_address):
                 int(get_current_time())
             )
         
-            if recent_requests > 50:
+            if recent_requests > 200:
                 redis_client.incr(f"spam_score:{ip_address}")
                 redis_client.expire(f"spam_score:{ip_address}", 86400)  # 24 hours
                 return True
