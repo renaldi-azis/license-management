@@ -67,8 +67,7 @@ def init_db():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE NOT NULL,
                 description TEXT,
-                number_of_credits INTEGER DEFAULT 0,
-                license_duration_hours INTEGER DEFAULT 24,
+                max_devices INTEGER DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -100,6 +99,18 @@ def init_db():
                 action TEXT NOT NULL,
                 user_agent TEXT,
                 response_status TEXT
+            )
+        ''')
+
+        # Settings table
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_id INTEGER UNIQUE NOT NULL,
+                number_of_credits INTEGER NOT NULL,
+                license_duration_hours INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(product_id) REFERENCES products (id)
             )
         ''')
 

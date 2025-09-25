@@ -40,6 +40,9 @@ async function loadDashboard() {
 
         // Load Users
         await loadUsers();
+
+        // Load Settings
+        await loadSettings();
     
     } catch (error) {
         console.error('Failed to load dashboard:', error);
@@ -82,10 +85,11 @@ async function loadProducts(page = 1, query = '') {
         const products = res.data.products || [];
         const pagination = res.data.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#products-table tbody');
+        if(tbody === null) return;
         if(products.length == 0) {
             showNoProducts(); return;
         }
-        if(tbody === null) return;
+        
         tbody.innerHTML = products.map(product => `
             <tr>
                 <td><strong>${product.name}</strong></td>
@@ -784,6 +788,98 @@ document.addEventListener('click', function() {
 document.getElementById('userDropdown').addEventListener('click', function(e) {
     e.stopPropagation();
 });
+
+// Settings
+async function loadSettings(page = 1, query = '') {
+    try {
+        showSettingsLoading();
+        const response = await axios.get(`${API_BASE}/settings?page=${page}&q=${encodeURIComponent(query)}`);
+        const settings = response.data.settings || [];
+        const pagination = response.data.pagination || { page: 1, total: 1 };
+        const tbody = document.querySelector('#settings-table tbody');
+        if(tbody === null) return;
+        if(settings.length == 0) {
+            showNoSettings(); return;
+        }        
+        tbody.innerHTML = settings.map(setting => `
+            <tr>
+                <td><strong>${setting.product_name}</strong></td>
+                <td>${setting.number_of_credits}</td>
+                <td>${setting.license_duration_hours}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.key}')">
+                        Edit
+                    </button>                    
+                </td>
+            </tr>
+        `).join('');
+        renderPagination('settings-pagination', pagination.page, pagination.total, (p) => {
+            // No pagination for settings yet
+        });
+        showSettingsTable();
+    }catch(error){
+        console.error('Failed to load settings:', error);
+    }
+}
+
+async function createProductSetting() {
+    const productId = document.getElementById('setting-product-select').value;
+    const numberOfCredits = document.getElementById('setting-number-of-credits').value;
+    const licenseDurationHours = document.getElementById('setting-license-duration-hours').value;
+    
+    if (!productId || !numberOfCredits || !licenseDurationHours) {
+        showAlert('Please fill in all fields', 'warning');
+        return;
+    }
+    
+    try {
+        const response = await axios.post(`${API_BASE}/settings`, {
+            product_id: parseInt(productId),
+            number_of_credits: parseInt(numberOfCredits),
+            license_duration_hours: parseInt(licenseDurationHours)
+        });
+        
+        showAlert('Product setting created successfully!', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('settingModal')).hide();
+        
+        // Reset form
+        document.getElementById('setting-form').reset();
+        
+        // Reload settings
+        await loadSettings();
+        
+    } catch (error) {
+        showAlert(error.response?.data?.error || 'Failed to create product setting', 'danger');
+    }
+}
+
+function editSetting(settingKey) {
+    window.alert('Edit setting feature is not implemented yet.');
+}
+
+function showSettingsLoading() {
+    if(document.getElementById('settings-loading') === null) return;
+    document.getElementById('settings-loading').style.display = 'flex';
+    document.getElementById('settings-table').style.display = 'none';
+    document.getElementById('settings-no-data').style.display = 'none';
+    document.getElementById('settings-pagination').style.display = 'none';
+}
+
+function showSettingsTable() {
+    document.getElementById('settings-loading').style.display = 'none';
+    document.getElementById('settings-table').style.display = 'table';
+    document.getElementById('settings-no-data').style.display = 'none';
+    document.getElementById('settings-pagination').style.display = 'flex';
+}
+
+function showNoSettings() {
+    document.getElementById('settings-loading').style.display = 'none';
+    document.getElementById('settings-table').style.display = 'none';
+    document.getElementById('settings-no-data').style.display = 'flex';
+    document.getElementById('settings-pagination').style.display = 'none';
+}
+
+// Show settings form
 
 // Show loading state for products
 function showProductsLoading() {

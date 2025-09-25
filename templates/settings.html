@@ -4,6 +4,90 @@
 
 {% block content %}
 
+<!-- Create Setting Section -->
+<div class="table-container" id="create-setting">
+    <div class="table-header">
+        <div class="table-title">Create Setting</div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="mb-3">
+            <label for="setting-product-select" class="form-label">Setting</label>
+                <div class="select-wrapper">
+                    <select id="setting-product-select" class="form-select">
+                        <option value="">Select Product...</option>
+                        <!-- options will be populated by JS -->
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Number of Credits</label>
+            <input type="number" class="form-control" id="setting-credits" value="1" min="1">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Trial Period (hours)</label>
+            <input type="number" class="form-control" id="setting-trial-period" value="24" min="0">
+        </div>
+        <div class="col-md-4" style="text-align: center;">
+            <label class="form-label">&nbsp;</label>
+            <div>
+                <button class="btn btn-success btn-responsive" onclick="createProductSetting()">
+                    <i class="fas fa-plus-circle"></i> 
+                    <span class="btn-text">Create Product Setting</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- Settings -->
+<div class="table-container" id="settings-section">
+    <div class="table-header">
+        <div class="table-title">Settings</div>
+    </div>
+     <div class="table-responsive">
+        <!-- Beautiful Loading State -->
+        <div id="settings-loading" class="loading-state">
+            <div class="loading-spinner">
+                <div class="loading-icon">
+                    <i class="fas fa-cog pulse-icon"></i>
+                </div>
+            </div>
+            <div class="loading-text">Loading Products</div>
+            <div class="loading-subtext">Fetching your product data...</div>
+        </div>
+        <table class="table" id="settings-table" style="display: none;">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Number of Credits</th>
+                    <th>Trial Period(h)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Filled by JS -->
+            </tbody>
+        </table>
+         <!-- No Data State for Products -->
+        <div id="settings-no-data" class="no-data" style="display: none;">
+            <div class="no-data-icon">
+                <i class="fas fa-cog"></i>
+            </div>
+            <div class="no-data-title">No Products Found</div>
+            <div class="no-data-description">
+                You haven't created any products yet. Add your first product to start managing licenses.
+            </div>
+        </div>
+        
+    </div>
+    <!-- Settings Pagination -->
+    <nav>
+        <ul class="pagination justify-content-center" id="settings-pagination">
+            <!-- Filled by JS -->
+        </ul>
+    </nav>
+</div>
 
 {% endblock %}

@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_reque
 from flask_limiter.util import get_remote_address
 
 from config import Config
-from api import auth, licenses, products , validation
+from api import auth, licenses, products , validation, settings
 # from api.auth import recaptcha
 from models.database import init_db
 from services.rate_limiter import limiter
@@ -73,7 +73,8 @@ def create_app():
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(licenses.bp, url_prefix='/api/licenses')
     app.register_blueprint(products.bp, url_prefix='/api/products')
-    app.register_blueprint(validation.bp, url_prefix='/api/validate')  # For web routes
+    app.register_blueprint(validation.bp, url_prefix='/api/validate')
+    app.register_blueprint(settings.bp, url_prefix='/api/settings')
     
     # Simple routes
     @app.route('/')
