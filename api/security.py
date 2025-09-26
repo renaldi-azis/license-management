@@ -1,8 +1,4 @@
-# security.py
-import os
-import json
 import base64
-import hashlib
 import secrets
 import time
 from typing import Dict, Tuple, Optional
@@ -120,3 +116,8 @@ class CryptoManager:
         decrypted = decrypted[:-pad_length]
         
         return decrypted.decode('utf-8')
+    
+
+# Global instances
+session_manager = SessionManager()
+crypto_manager = CryptoManager()

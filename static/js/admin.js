@@ -6,10 +6,222 @@ let productChoices = null;
 let productSearchChoices = null;
 let productSettingChoices = null;
 
+
 const API_BASE = '/api';
+let client = null;
 let token = localStorage.getItem('token');
 if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
+class SecureLicenseClient {
+    constructor() {
+        this.clientId = 'x-client';
+        this.sessionId = null;
+        this.aesKey = null;
+        this.serverPublicKey = null;
+        this.clientKeyPair = null;
+    }
+
+    async initializeSession() {
+        try {
+            const response = await fetch(`/init-session`, {
+                method: 'GET',
+                headers: {
+                    'X-Client-ID': this.clientId
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                this.sessionId = data.session_id;
+                this.serverPublicKey = await this.importPublicKey(data.server_public_key);
+                axios.defaults.headers.common['X-Session-ID'] = `${this.sessionId}`;
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Session initialization failed:', error);
+            return false;
+        }
+    }
+
+    // Utility method: Convert base64 string to ArrayBuffer
+    base64ToArrayBuffer(base64) {
+        const binaryString = atob(base64);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+    }
+
+    // Utility method: Convert ArrayBuffer to base64 string
+    arrayBufferToBase64(buffer) {
+        const bytes = new Uint8Array(buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+
+    async importPublicKey(pem) {
+        const pemHeader = '-----BEGIN PUBLIC KEY-----';
+        const pemFooter = '-----END PUBLIC KEY-----';
+        const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
+        const binaryDer = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+        
+        return await crypto.subtle.importKey(
+            'spki',
+            binaryDer,
+            {
+                name: 'RSA-OAEP',
+                hash: 'SHA-256'
+            },
+            true,
+            ['encrypt']
+        );
+    }
+
+    async generateKeyPair() {
+        this.clientKeyPair = await crypto.subtle.generateKey(
+            {
+                name: 'RSA-OAEP',
+                modulusLength: 2048,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                hash: 'SHA-256'
+            },
+            true,
+            ['encrypt', 'decrypt']
+        );
+    }
+
+    async exportPublicKey() {
+        const exported = await crypto.subtle.exportKey('spki', this.clientKeyPair.publicKey);
+        const exportedAsBase64 = btoa(String.fromCharCode(...new Uint8Array(exported)));
+        return `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
+    }
+
+    async performKeyExchange() {
+        try {
+            await this.generateKeyPair();
+            this.aesKey = await crypto.subtle.generateKey(
+                { name: 'AES-CBC', length: 256 },
+                true,
+                ['encrypt', 'decrypt']
+            );
+
+            const exportedAesKey = await crypto.subtle.exportKey('raw', this.aesKey);
+            const encryptedAesKey = await crypto.subtle.encrypt(
+                { name: 'RSA-OAEP' },
+                this.serverPublicKey,
+                exportedAesKey
+            );
+
+            const clientPublicKey = await this.exportPublicKey();
+
+            const response = await fetch(`/key-exchange`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: this.sessionId,
+                    encrypted_aes_key: btoa(String.fromCharCode(...new Uint8Array(encryptedAesKey))),
+                    client_public_key: clientPublicKey
+                })
+            });
+
+            return response.ok;
+        } catch (error) {
+            console.error('Key exchange failed:', error);
+            return false;
+        }
+    }
+
+    async aesEncrypt(data) {
+        const iv = crypto.getRandomValues(new Uint8Array(16));
+        const dataStr = JSON.stringify(data);
+        const encoder = new TextEncoder();
+        const dataBytes = encoder.encode(dataStr);
+
+        // PKCS7 padding
+        const blockSize = 16;
+        const padLength = blockSize - (dataBytes.length % blockSize);
+        const padded = new Uint8Array(dataBytes.length + padLength);
+        padded.set(dataBytes);
+        padded.fill(padLength, dataBytes.length);
+
+        const encrypted = await crypto.subtle.encrypt(
+            { name: 'AES-CBC', iv },
+            this.aesKey,
+            padded
+        );
+
+        return {
+            iv: btoa(String.fromCharCode(...iv)),
+            data: btoa(String.fromCharCode(...new Uint8Array(encrypted)))
+        };
+    }
+
+   
+    async aesDecrypt(encryptedData) {
+        try {            
+            // If it's a string, it's probably base64 encoded JSON
+            if (typeof encryptedData === 'string') {
+                // Step 1: Base64 decode the string
+                const decodedString = atob(encryptedData);
+                console.log('After base64 decode:', decodedString);
+                
+                // Step 2: Parse the JSON
+                encryptedData = JSON.parse(decodedString);
+                console.log('After JSON parse:', encryptedData);
+            }
+            
+            // Now decrypt normally
+            const iv = this.base64ToArrayBuffer(encryptedData.iv);
+            const data = this.base64ToArrayBuffer(encryptedData.data);
+
+            const decrypted = await crypto.subtle.decrypt(
+                { name: "AES-CBC", iv: iv },
+                this.aesKey,
+                data
+            );
+            
+            // Remove padding and return
+            const decryptedArray = new Uint8Array(decrypted);
+            
+            const decoder = new TextDecoder();
+            return JSON.parse(decoder.decode(decryptedArray));
+            
+        } catch (error) {
+            console.error('Decryption failed:', error);
+            throw error;
+        }
+    }
+
+    async sendEncryptedRequest(endpoint, data) {
+        try {
+            const encryptedRequest = await this.aesEncrypt(data);
+
+            const response = await fetch(`${this.baseUrl}${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Session-ID': this.sessionId
+                },
+                body: JSON.stringify(encryptedRequest)
+            });
+
+            if (response.ok) {
+                const encryptedResponse = await response.json();
+                return await this.aesDecrypt(encryptedResponse);
+            } else {
+                return { error: `Request failed: ${response.status}` };
+            }
+        } catch (error) {
+            return { error: `Request failed: ${error.message}` };
+        }
+    }
 }
 
 // Initialize dashboard when page loads
@@ -24,6 +236,11 @@ document.addEventListener('DOMContentLoaded', function() {
 // Load complete dashboard data
 async function loadDashboard() {
     try {
+
+        client = new SecureLicenseClient()
+        await client.initializeSession()
+        await client.performKeyExchange()
+
         // Load stats
         if(window.location.pathname === '/admin') {
             await loadStats();
@@ -44,7 +261,8 @@ async function loadDashboard() {
 
         // Load Settings
         await loadSettings();
-    
+        
+
     } catch (error) {
         console.error('Failed to load dashboard:', error);
         if (error.response?.status === 401) {
@@ -57,8 +275,11 @@ async function loadDashboard() {
 // Load statistics cards
 async function loadStats() {
     try {
-        const response = await axios.get(`${API_BASE}/licenses/stats`);
-        const stats = response.data;
+        const res_encrypted = await axios.get(`${API_BASE}/licenses/stats`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const stats = res;
+        if(document.getElementById('total-licenses') === null) return;
         document.getElementById('total-licenses').textContent = stats.total_licenses;
         document.getElementById('active-licenses').textContent = stats.active_licenses;
         document.getElementById('expired-licenses').textContent = stats.expired_licenses;
@@ -82,10 +303,14 @@ async function loadStats() {
 async function loadProducts(page = 1, query = '') {
     try {
         showProductsLoading();
-        const res = await axios.get(`${API_BASE}/products?page=${page}&q=${encodeURIComponent(query)}`);
-        const products = res.data.products || [];
-        const pagination = res.data.pagination || { page: 1, total: 1 };
+        const res_encrypted = await axios.get(`${API_BASE}/products?page=${page}&q=${encodeURIComponent(query)}`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        
+        const products = res.products || [];
+        const pagination = res.pagination || { page: 1, total: 1 };        
         const tbody = document.querySelector('#products-table tbody');
+        
         if(tbody === null) return;
         if(products.length == 0) {
             showNoProducts(); return;
@@ -127,8 +352,10 @@ async function loadUsers(page = 1) {
         const tbody = document.querySelector('#users-table tbody');
         const noDataDiv = document.getElementById('users-no-data');
         if(tbody === null) return;
-        const res = await axios.get(`${API_BASE}/auth/users?page=${page}`);
-        const users = res.data.users || [];
+        const res_encrypted = await axios.get(`${API_BASE}/auth/users?page=${page}`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))        
+        const users = res.users || [];
         const pagination = res.data.pagination || { page: 1, total: 1 };
         if(users.length == 0) {
             document.getElementById('users-table').style.display = 'none';
@@ -225,9 +452,11 @@ async function removeUser(username) {
 async function loadLicenses(page = 1 , query = '') {
     try {
         showLicensesLoading();
-        const res = await axios.get(`${API_BASE}/licenses?page=${page}&q=${encodeURIComponent(query)}`);
-        const licenses = res.data.licenses || [];
-        const pagination = res.data.pagination || { page: 1, total: 1 };
+        const res_encrypted = await axios.get(`${API_BASE}/licenses?page=${page}&q=${encodeURIComponent(query)}`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))   
+        const licenses = res.licenses || [];
+        const pagination = res.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#licenses-table tbody');
         
         if(tbody === null) return;
@@ -328,10 +557,12 @@ async function createLicense() {
 
 async function backupLicenses() {
     try {
-        const response = await axios.get(`${API_BASE}/licenses/backup`, {
+        const res_encrypted = await axios.get(`${API_BASE}/licenses/backup`, {
             responseType: 'blob'
         });
-        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const url = window.URL.createObjectURL(new Blob([res]));
         const link = document.createElement('a');
         link.href = url;
         link.setAttribute('download', `licenses_backup_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -443,8 +674,10 @@ function copyLicenseKey(key) {
 // Update product select dropdown
 async function updateProductSelect() {
     try {
-        const response = await axios.get(`${API_BASE}/products/all`);
-        const products = response.data.products;
+        const res_encrypted = await axios.get(`${API_BASE}/products/all`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const products = res.products;
         const select = document.getElementById('product-select');
         const select_search = document.getElementById('product-search-select');
         const setting_select = document.getElementById('setting-product-select');
@@ -536,14 +769,15 @@ function setupRealTimeUpdates() {
 // Edit product: show a modal with current product info and allow update
 async function editProduct(productId) {
     try {
-        // Fetch current product data
-        const response = await axios.get(`${API_BASE}/products`);
-        const product = response.data.products.find(p => p.id === productId);
+        // Fetch current product data        
+        const res_encrypted = await axios.get(`${API_BASE}/products`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const product = res.products.find(p => p.id === productId);
         if (!product) {
             showAlert('Product not found', 'danger');
             return;
         }
-
         // Create modal HTML
         const modalId = 'editProductModal';
         let modalEl = document.getElementById(modalId);
@@ -565,7 +799,7 @@ async function editProduct(productId) {
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit-product-description" class="form-label">Description</label>
-                                    <textarea class="form-control" id="edit-product-description" value="${product.description || ''}"/>
+                                    <textarea class="form-control" id="edit-product-description">${product.description || ''}</textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit-product-max-devices" class="form-label">Max Devices</label>
@@ -618,8 +852,10 @@ async function editProduct(productId) {
 // View product stats
 async function viewProductStats(productId) {
     try {
-        const response = await axios.get(`${API_BASE}/products/${productId}/stats`);
-        const stats = response.data;
+        const res_encrypted = await axios.get(`${API_BASE}/products/${productId}/stats`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const stats = res;
         
         // Create modal with stats
         const modal = createStatsModal(`Product Stats: ${stats.product.name}`, stats);
@@ -761,8 +997,11 @@ async function showLicenseDetail(licenseKey) {
     modal.show();
 
     try {
-        const res = await axios.get(`/api/licenses/${licenseKey}`);
-        const lic = res.data;
+        const res_encrypted = await axios.get(`/api/licenses/${licenseKey}`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        
+        const lic = res
         modalBody.innerHTML = `
             <ul class="list-group">
                 <li class="list-group-item"><strong>License Key:</strong> ${lic.key}</li>
@@ -812,9 +1051,11 @@ document.getElementById('userDropdown').addEventListener('click', function(e) {
 async function loadSettings(page = 1, query = '') {
     try {
         showSettingsLoading();
-        const response = await axios.get(`${API_BASE}/settings?page=${page}&q=${encodeURIComponent(query)}`);
-        const settings = response.data.settings || [];
-        const pagination = response.data.pagination || { page: 1, total: 1 };
+        const res_encrypted = await axios.get(`${API_BASE}/settings?page=${page}&q=${encodeURIComponent(query)}`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const settings = res.settings || [];
+        const pagination = res.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#settings-table tbody');
         if(tbody === null) return;
         if(settings.length == 0) {
@@ -826,7 +1067,7 @@ async function loadSettings(page = 1, query = '') {
                 <td>${setting.number_of_credits}</td>
                 <td>${setting.license_duration_hours}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.id}')">
+                    <button class="btn btn-sm btn-outline-primary" onclick="editSetting('${setting.product_id}')">
                         Edit
                     </button>                    
                 </td>
@@ -872,9 +1113,10 @@ async function createProductSetting() {
 async function editSetting(productId) {
     try {
         // Fetch current product data
-        const response = await axios.get(`${API_BASE}/settings/${productId}`);
-        const setting = response.data;
-        console.log(setting);
+        const res_encrypted = await axios.get(`${API_BASE}/settings/${productId}`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const setting = res;
         if (!setting) {
             showAlert('Setting not found', 'danger');
             return;

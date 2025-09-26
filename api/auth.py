@@ -8,6 +8,9 @@ from services.security_service import (hash_password, verify_credentials)
 from services.users_service import (create_user, get_users_count, get_users, update_user, remove_user)
 from models.database import get_db_connection
 
+from cryptography.hazmat.primitives import serialization
+from api.security import session_manager
+
 bp = Blueprint('auth', __name__)
 # recaptcha = ReCaptcha()  # or pass your app if not using factory
 
@@ -42,10 +45,6 @@ def login():
     if request.method == 'POST':
         data = request.get_json()
         username, password = data['username'], data['password']
-        # if not recaptcha.verify():
-        #     flash("reCAPTCHA validation failed. Please try again.", "danger")
-        #     return render_template("login.html")
-        # get role by username & password
         with get_db_connection() as conn:
             c = conn.cursor()
             c.execute('SELECT password, role FROM users WHERE username = ?', (username,))
@@ -54,12 +53,6 @@ def login():
                 return jsonify({'error': 'Invalid credentials'}), 401
             if row:
                 expected_password_hash = row[0]
-                # update credit_number and machine_code
-                # if(machine_code is None or machine_code.strip() == ''):
-                #     machine_code = 'Not Provided'
-                # if(credit_number is None or credit_number.strip() == ''):
-                #     credit_number = 'Not Provided'
-                # update_user(username, credit_number=credit_number, machine_code=machine_code)
             else:
                 expected_password_hash = None      
 
@@ -67,7 +60,8 @@ def login():
             access_token = create_access_token(
                 identity= username,  # Use username as identity
                 expires_delta=timedelta(days=1)
-            )
+            )          
+
             resp = make_response({'access_token': access_token, 'user': username})
             resp.set_cookie('access_token_cookie', access_token, httponly=True, samesite='Lax')
             return resp

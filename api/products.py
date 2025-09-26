@@ -27,7 +27,7 @@ def list_products():
             'per_page': per_page,
             'total': total_pages
         }
-    })
+    }), 200
 
 @bp.route('/all', methods=['GET'])
 @rate_limited(limit='30 per minute')  # Limit product retrieval

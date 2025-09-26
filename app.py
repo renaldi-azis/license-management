@@ -1,5 +1,7 @@
+import base64
 import datetime
-from flask import Flask, redirect, render_template, url_for
+import json
+from flask import Flask, redirect, request, jsonify, render_template, url_for
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from flask_limiter.util import get_remote_address
 
@@ -10,6 +12,9 @@ from services.rate_limiter import limiter
 from services.rate_limiter import redis_client
 from services.rate_limiter import suspicious_activity_check
 
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from api.security import session_manager, crypto_manager
 
 def create_app():
     app = Flask(__name__)
@@ -33,10 +38,7 @@ def create_app():
     # Initialize database
     with app.app_context():
         init_db()
-    
-    # Initialize reCAPTCHA
-    # init_recaptcha(app)
-    
+
     # Health check endpoint
     @app.route('/health')
     def health():
@@ -105,6 +107,117 @@ def create_app():
     def login():
         return render_template('login.html')
     
+    @app.route('/init-session', methods=['GET'])
+    def initialize_session():
+        """Initialize new session and start key exchange"""
+        client_id = request.headers.get('X-Client-ID', 'unknown')
+        session_id = session_manager.create_session(client_id)
+        session_data = session_manager.get_session(session_id)
+        
+        # Get server public key for key exchange
+        server_public_key = session_data['server_private_key'].public_key()
+        server_public_pem = server_public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        
+        return jsonify({
+            'ok': True,
+            'session_id': session_id,
+            'server_public_key': server_public_pem.decode('utf-8'),
+            'status': 'session_created'
+        })
+    
+    @app.after_request
+    def encrypt_response(response):
+        """Encrypt JSON responses if session and AES key are established"""
+        if (response.content_type == 'application/json' or not request.endpoint in ['/', '/api/auth/login', '/api/auth/register']) and response.status_code == 200:
+            try:                
+                session_id = request.headers.get('X-Session-ID')                
+                if session_id:
+                    current_session = session_manager.get_session(session_id)
+                    if current_session and 'aes_key' in current_session:
+                        # Encrypt response data
+                        original_data = response.get_data(as_text=True)
+                        encrypted_data = crypto_manager.aes_encrypt(
+                            current_session['aes_key'],
+                            json.dumps(original_data)
+                        )
+                        # Encode to base64 to make it JSON serializable
+                        b64_encrypted = base64.b64encode(json.dumps(encrypted_data).encode('utf-8')).decode('utf-8')
+                        
+                        # Replace response data with encrypted data
+                        return jsonify({
+                            'encrypted_data': b64_encrypted,  # Wrap in an object
+                            'status': 'encrypted'
+                        })
+            except Exception as e:
+                app.logger.error(f"Response encryption failed: {e}")
+                # In case of error, return original response unmodified
+                pass
+        return response
+                
+
+    @app.route('/get-session/<string:sessionId>')
+    def get_session_info(sessionId):
+        session_id = sessionId
+        session_data = session_manager.get_session(session_id)
+        
+        # Get server public key for key exchange
+        server_public_key = session_data['server_private_key'].public_key()
+        server_public_pem = server_public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+        
+        return jsonify({
+            'session_id': session_id,
+            'server_public_key': server_public_pem.decode('utf-8'),
+            'status': 'get_session'
+        })
+
+
+    @app.route('/key-exchange', methods=['POST'])
+    def key_exchange():
+        """Complete key exchange with client"""
+        data = request.get_json()
+        session_id = data.get('session_id')
+        encrypted_aes_key = data.get('encrypted_aes_key')
+        client_public_key_pem = data.get('client_public_key')
+        
+        if not all([session_id, encrypted_aes_key, client_public_key_pem]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+        
+        current_session = session_manager.get_session(session_id)
+        if not current_session:
+            return jsonify({'error': 'Invalid session'}), 401
+        
+        try:
+            # Load client public key
+            client_public_key = serialization.load_pem_public_key(
+                client_public_key_pem.encode('utf-8'),
+                backend=default_backend()
+            )
+            
+            # Decrypt AES key with server private key
+            encrypted_key_bytes = base64.b64decode(encrypted_aes_key)
+            aes_key = crypto_manager.rsa_decrypt(
+                current_session['server_private_key'],
+                encrypted_key_bytes
+            )
+            
+            # Store keys in session
+            current_session['aes_key'] = aes_key
+            current_session['client_public_key'] = client_public_key
+
+            # log current_session
+            
+            return jsonify({'status': 'key_exchange_complete'})
+            
+        except Exception as e:
+            return jsonify({'error': f'Key exchange failed: {str(e)}'}), 400
+
+
     # Global error handler for rate limiting
     @app.errorhandler(429)
     def ratelimit_handler(e):
