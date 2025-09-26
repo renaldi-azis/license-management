@@ -1244,3 +1244,9 @@ ol,ul{
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
 }
+
+.list-group-item {
+    word-wrap: break-word;
+    padding: 15px 20px;
+    transition: background-color 0.2s;
+}

@@ -565,7 +565,7 @@ async function editProduct(productId) {
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit-product-description" class="form-label">Description</label>
-                                    <input type="text" class="form-control" id="edit-product-description" value="${product.description || ''}">
+                                    <textarea class="form-control" id="edit-product-description" value="${product.description || ''}"/>
                                 </div>
                                 <div class="mb-3">
                                     <label for="edit-product-max-devices" class="form-label">Max Devices</label>
