@@ -10,15 +10,16 @@ class License:
         if not license_key:
             license_key = generate_license_key()
         
-        expires_at = datetime.now() + timedelta(hours=expires_hours)
-          
+        expires_at = (datetime.now() + timedelta(hours=expires_hours)).isoformat() if expires_hours > 0 else None
+        created_at = datetime.now().isoformat();
+
         with get_db_connection() as conn:
             c = conn.cursor()
             try:
                 c.execute('''
-                    INSERT INTO licenses (key, product_id, user_id, credit_number, machine_code, expires_at, status)
-                    VALUES (?, ?, ?, ?, ?, ?, 'active')
-                ''', (license_key, product_id, user_id, credit_number, machine_code, expires_at))
+                    INSERT INTO licenses (key, product_id, user_id, credit_number, machine_code, expires_at, created_at, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ? ,'active')
+                ''', (license_key, product_id, user_id, credit_number, machine_code, expires_at, created_at))
                 conn.commit()
                 return {'success': True, 'license_key': license_key}
             except Exception as e:

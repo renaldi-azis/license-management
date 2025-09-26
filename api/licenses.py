@@ -242,7 +242,7 @@ def automate_license_route():
     
     number_of_credits = setting['number_of_credits'] if setting['number_of_credits'] is not None else 0
     license_duration_hours = setting['license_duration_hours'] if setting['license_duration_hours'] is not None else 24  # default a day
-    expires_hours = max(1, license_duration_hours // 24)  # at least 1 day
+    expires_hours = max(1, license_duration_hours)  # at least 1 day
 
     result = create_license(
         product_id=product_id,

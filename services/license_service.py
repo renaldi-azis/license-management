@@ -46,7 +46,7 @@ def get_licenses(search_query="", page=1, per_page=10):
             UPDATE licenses
             SET status = 'expired'
             WHERE expires_at IS NOT NULL AND expires_at < ? AND status != 'revoked'
-        ''', (datetime.now(),))
+        ''', (datetime.now().isoformat(),))
         conn.commit()
         
         if(keywords):
@@ -75,6 +75,8 @@ def get_licenses(search_query="", page=1, per_page=10):
             # Show partial key for security
             license_data['key_display'] = license_data['key'][:8] + '...' if license_data['key'] else None
             license_data['key']  # Hide full key
+            license_data['expires_at'] = datetime.fromisoformat(license_data['expires_at'])
+            license_data['created_at'] = datetime.fromisoformat(license_data['created_at'])
             licenses.append(license_data)
 
         return licenses, total

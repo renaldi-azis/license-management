@@ -77,11 +77,16 @@ if __name__ == "__main__":
     tester = LicenseRegisterSuite(server_url, username, password)
     tester.setup_security_test()
 
-    test_data=[{"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # Valid
-               {"user_id": "<script>alert(1)</script>", "product_name": "ProductA", "machine_code": "MACHINE123"}, # XSS
+    # I have some questions, now test_data is manually inputed to the code,
+    # But should it be read from an external file like CSV or JSON for better scalability?
+    # How do you think?
+    # CSV or JSON or XLSX or DB or else?
+
+    test_data=[{"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # This is valid data
+               {"user_id": "<script>alert(1)</script>", "product_name": "ProductA", "machine_code": "MACHINE123"}, # XSS => this data includes XSS
                {"user_id": "user2", "product_name": "NonExistentProduct", "machine_code": "MACHINE456"}, # Non-existent product
-               {"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # Duplicate active license
-               {"user_id": "user3", "product_name": "ProductA", "machine_code": "<img src=x onerror=alert(1)>"}] # XSS
+               {"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # Duplicate active license, this includes same values with first data so => fails
+               {"user_id": "user3", "product_name": "ProductA", "machine_code": "<img src=x onerror=alert(1)>"}] # XSS => this also includes XSS
 
     for td in test_data:
         print(f"\nTesting with user_id: {td['user_id']}, product_name: {td['product_name']}, machine_code: {td['machine_code']}")
