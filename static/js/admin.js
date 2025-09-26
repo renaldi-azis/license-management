@@ -254,7 +254,7 @@ async function loadLicenses(page = 1 , query = '') {
                 </td>
                 <td>
                     ${license.expires_at ? 
-                        new Date(license.expires_at).toLocaleDateString() : 
+                        new Date(license.expires_at).toISOString().replace('T', ' ').slice(0, 19) : 
                         'Never'
                     }
                 </td>
