@@ -5,11 +5,9 @@ from flask_limiter.util import get_remote_address
 
 from config import Config
 from api import auth, licenses, products , validation, settings
-# from api.auth import recaptcha
 from models.database import init_db
 from services.rate_limiter import limiter
 from services.rate_limiter import redis_client
-# from services.security import init_recaptcha
 from services.rate_limiter import suspicious_activity_check
 
 
@@ -18,10 +16,6 @@ def create_app():
     
     app.config.from_object(Config)
     limiter.init_app(app)
-    # recaptcha.init_app(app)
-
-    # Initialize rate limiter (requires app context)
-    # init_limiter(app)
 
     # Register error handlers first
     @app.errorhandler(404)
@@ -39,8 +33,6 @@ def create_app():
     # Initialize database
     with app.app_context():
         init_db()
-    
-    
     
     # Initialize reCAPTCHA
     # init_recaptcha(app)

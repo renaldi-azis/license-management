@@ -4,7 +4,7 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 # from flask_recaptcha import ReCaptcha
 from services.rate_limiter import rate_limited
 from services.users_service import get_role_by_username
-from services.security import (hash_password, verify_credentials)
+from services.security_service import (hash_password, verify_credentials)
 from services.users_service import (create_user, get_users_count, get_users, update_user, remove_user)
 from models.database import get_db_connection
 

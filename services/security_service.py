@@ -1,15 +1,6 @@
 from flask import current_app
-# from flask_recaptcha import ReCaptcha
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
-
-# recaptcha = None
-
-# def init_recaptcha(app):
-#     """Initialize reCAPTCHA if keys are provided."""
-#     global recaptcha
-#     if Config.RECAPTCHA_SITE_KEY and Config.RECAPTCHA_SECRET_KEY:
-#         recaptcha = ReCaptcha(app)
 
 def verify_credentials(hashed_password, password):
     """Verify credentials."""
