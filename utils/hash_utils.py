@@ -8,6 +8,10 @@ def hash_license_key(license_key):
     """Create a SHA-256 hash of the license key for secure storage."""
     return hashlib.sha256(license_key.encode('utf-8')).hexdigest()
 
+def hash_machine_code(machine_code):
+    """Create a SHA-256 hash of the machine code for secure storage."""
+    return hashlib.sha256(machine_code.encode('utf-8')).hexdigest()
+
 def generate_license_key(length=16):
     """Generate a random alphanumeric license key."""
     chars = string.ascii_letters + string.digits

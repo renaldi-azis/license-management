@@ -7,6 +7,7 @@ class LicenseRegisterSuite:
     def __init__(self, base_url, username, password):
         self.base_url = base_url
         self.session = requests.Session()
+        self.session.verify = False  # Disable SSL verification for self-signed certs
         self.username = username
         self.password = password
         pass
@@ -16,7 +17,8 @@ class LicenseRegisterSuite:
             # Login as admin and set JWT token
             login_resp = self.session.post(
                 f"{self.base_url}/api/auth/login",
-                json={"username": self.username, "password": self.password}
+                json={"username": self.username, "password": self.password},
+                verify=False  # Disable SSL verification for self-signed certs
             )
             login_resp.raise_for_status()
             token = login_resp.json().get("access_token")
@@ -46,7 +48,8 @@ class LicenseRegisterSuite:
                     "user_id": user_id,
                     "product_name": product_name,
                     "machine_code": machine_code
-                }
+                },
+                verify=False  # Disable SSL verification for self-signed certs
             )
             resp.raise_for_status()
             print(f"\nRequest successful!")

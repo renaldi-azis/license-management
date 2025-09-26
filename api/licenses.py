@@ -13,6 +13,7 @@ from services.license_service import (
     get_license_stats, get_license_detail
 )
 
+from utils.hash_utils import hash_machine_code
 from utils.validators import validate_json, validate_license_key
 
 bp = Blueprint('licenses', __name__)
@@ -42,7 +43,7 @@ def create_license_route():
         product_id=data['product_id'],
         user_id=data['user_id'],
         credit_number=data.get('credit_number', 'None'),
-        machine_code=data.get('machine_code', 'None'),
+        machine_code=hash_machine_code(data.get('machine_code', 'None')),
         expires_hours=data.get('expires_hours', 30)
     )
     

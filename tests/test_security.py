@@ -1,21 +1,26 @@
 # test_security.py - Security and anti-spam tests
 import requests
 import time
+from getpass import getpass
 from concurrent.futures import ThreadPoolExecutor
 import json
 
 class SecurityTestSuite:
-    def __init__(self, base_url="http://localhost:5000"):
+    def __init__(self, base_url="https://103.152.165.248"):
         self.base_url = base_url
         self.session = requests.Session()
+        self.session.verify = False 
         self.test_license_key = ""
         self.test_product = ""
-        self.admin_username = "richtoolsmmo01"
-        self.admin_password = "RichTools2025!"  # <-- Set your admin password here
+        self.admin_username = ""
+        self.admin_password = "!"  # <-- Set your admin password here
 
     def setup_security_test(self):
         print("🔧 Setting up security test environment...")
-
+        username = input("Enter username: ").strip()
+        password = getpass("Enter password: ").strip()
+        self.admin_username = username
+        self.admin_password = password
         # Login as admin and set JWT token
         login_resp = self.session.post(
             f"{self.base_url}/api/auth/login",
@@ -100,13 +105,15 @@ class SecurityTestSuite:
         print("\n⏱️  Testing rate limiting under stress...")
         response = requests.get(
                 f"{self.base_url}/api/validate/{self.test_product}/{self.test_license_key}",
-                timeout=5
+                timeout=5,
+                verify=False  
             )
         def make_request(_):
             try:
                 response = requests.get(
                    f"{self.base_url}/api/validate/{self.test_product}/{self.test_license_key}",
-                    timeout=5
+                    timeout=5,
+                    verify=False
                 )                
                 return response.status_code
             except:
@@ -128,7 +135,8 @@ class SecurityTestSuite:
     def test_once(self):
         response = requests.get(
             f"{self.base_url}/api/validate/{self.test_product}/{self.test_license_key}",
-            timeout=10
+            timeout=10,
+            verify=False  # Disable SSL verification for self-signed certs
         )
         print("\n🔍 Testing single validation...")
         print(response.json())
@@ -142,7 +150,8 @@ class SecurityTestSuite:
         def validate_concurrently(license_key, index):
             response = requests.get(
                 f"{self.base_url}/api/validate/{self.test_product}/{license_key}",
-                timeout=10
+                timeout=10,
+                verify=False  
             )
             return {
                 "index": index,
