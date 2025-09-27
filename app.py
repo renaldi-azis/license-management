@@ -131,7 +131,9 @@ def create_app():
     @app.after_request
     def encrypt_response(response):
         """Encrypt JSON responses if session and AES key are established"""
-        if (response.content_type == 'application/json' or not request.endpoint in ['/', '/api/auth/login', '/api/auth/register']) and response.status_code == 200:
+        if(request.endpoint == 'auth.login' or request.endpoint == 'auth.register'):
+            return response
+        if (response.content_type == 'application/json' or not request.endpoint in ['/', '/api/auth/login', '/api/auth/register', 'auth.login', 'auth.register']) and response.status_code == 200:
             try:                
                 session_id = request.headers.get('X-Session-ID')                
                 if session_id:
@@ -157,6 +159,30 @@ def create_app():
                 pass
         return response
                 
+    @app.before_request
+    def decrypt_request():
+        """Decrypt incoming JSON requests if session and AES key are established"""
+        if request.endpoint in ['/', '/api/auth/login', '/api/auth/register', 'auth.login', 'auth.register']:
+            return  # Skip decryption for these endpoints
+        if request.method in ['POST'] and request.is_json:
+            try:
+                session_id = request.headers.get('X-Session-ID')
+                if session_id:
+                    current_session = session_manager.get_session(session_id)
+                    if current_session and 'aes_key' in current_session:
+                        encrypted_payload = request.get_json()
+                        if 'encryptedRequest' in encrypted_payload:
+                            encrypted_data = encrypted_payload['encryptedRequest']
+                            # Decrypt the data
+                            decrypted_json = crypto_manager.aes_decrypt(
+                                current_session['aes_key'],
+                                encrypted_data
+                            )
+                            # Replace request.json with decrypted data
+                            request.data = json.loads(decrypted_json)
+            except Exception as e:
+                app.logger.error(f"Request decryption failed: {e}")
+                return jsonify({'error': 'Invalid encrypted data'}), 400
 
     @app.route('/get-session/<string:sessionId>')
     def get_session_info(sessionId):

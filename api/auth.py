@@ -64,6 +64,7 @@ def login():
 
             resp = make_response({'access_token': access_token, 'user': username})
             resp.set_cookie('access_token_cookie', access_token, httponly=True, samesite='Lax')
+            print(resp)
             return resp
         return jsonify({'error': 'Invalid credentials'}), 401
     return render_template('login.html')

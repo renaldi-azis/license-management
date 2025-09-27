@@ -9,17 +9,12 @@ bp = Blueprint('settings', __name__)
 
 @bp.route('', methods=['POST'])
 @jwt_required()
-@validate_json({
-    'product_id': int,
-    'number_of_credits': int,
-    'license_duration_hours': int
-})
 def create_setting_route():
     username = get_jwt_identity()
     if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
-    data = request.get_json()
+    data = request.data
     return create_setting(
         product_id=data['product_id'],
         number_of_credits=data['number_of_credits'],

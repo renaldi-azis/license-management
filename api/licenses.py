@@ -25,17 +25,13 @@ def contains_xss(value):
 @bp.route('', methods=['POST'])
 @rate_limited(limit='20 per minute')  # Limit license creation
 @jwt_required()
-@validate_json({
-    'product_id': int,
-    'user_id': str,
-    'expires_hours': int
-})
 def create_license_route():
     username = get_jwt_identity()
     if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
-    data = request.get_json()
+    data = request.data
+    
     if contains_xss(data.get('user_id', '')):
         return jsonify({'error': 'Invalid input detected'}), 400
     
@@ -194,17 +190,13 @@ def backup_licenses():
 
 @bp.route('/automate', methods=['POST'])
 @jwt_required()
-@validate_json({
-    'product_name': str,
-    'user_id': str,
-    'machine_code': str,
-})
 def automate_license_route():
     username = get_jwt_identity()
     if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
-    data = request.get_json()
+    data = request.data
+
     if contains_xss(data.get('user_id', '')) or contains_xss(data.get('machine_code', '')) or contains_xss(data.get('product_name', '')):
         return jsonify({'error': 'Invalid input detected'}), 400
     

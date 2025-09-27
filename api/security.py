@@ -105,7 +105,6 @@ class CryptoManager:
         """Decrypt AES-256-CBC encrypted data"""
         iv = base64.b64decode(encrypted_data['iv'])
         data = base64.b64decode(encrypted_data['data'])
-        
         cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
         decryptor = cipher.decryptor()
         
@@ -115,7 +114,11 @@ class CryptoManager:
         pad_length = decrypted[-1]
         decrypted = decrypted[:-pad_length]
         
-        return decrypted.decode('utf-8')
+        data_str = decrypted.decode('utf-8')
+        last_bracket_index = data_str.rfind('}')
+        clean_data = data_str[:last_bracket_index] + "}"
+        
+        return clean_data.encode('utf-8')
     
 
 # Global instances

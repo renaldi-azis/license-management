@@ -40,13 +40,12 @@ def get_all_products():
 @bp.route('', methods=['POST'])
 @rate_limited(limit='20 per minute')  # Limit product creation
 @jwt_required()
-@validate_json({'name': str, 'max_devices': int})
 def create_product_route():
     username = get_jwt_identity()
     if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
     
-    data = request.get_json()
+    data = request.data
     result = create_product(
         name=data['name'],
         description=data.get('description'),

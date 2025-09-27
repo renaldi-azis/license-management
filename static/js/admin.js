@@ -199,17 +199,12 @@ class SecureLicenseClient {
         }
     }
 
-    async sendEncryptedRequest(endpoint, data) {
+    async sendEncryptedPostRequest(endpoint, data) {
         try {
             const encryptedRequest = await this.aesEncrypt(data);
-
-            const response = await fetch(`${this.baseUrl}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Session-ID': this.sessionId
-                },
-                body: JSON.stringify(encryptedRequest)
+            console.log(encryptedRequest)
+            const response = await axios.post(`/api/${endpoint}`, {
+                encryptedRequest
             });
 
             if (response.ok) {
@@ -454,7 +449,7 @@ async function loadLicenses(page = 1 , query = '') {
         showLicensesLoading();
         const res_encrypted = await axios.get(`${API_BASE}/licenses?page=${page}&q=${encodeURIComponent(query)}`);
         const encryptedResponse = res_encrypted.data.encrypted_data
-        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))   
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
         const licenses = res.licenses || [];
         const pagination = res.pagination || { page: 1, total: 1 };
         const tbody = document.querySelector('#licenses-table tbody');
@@ -533,22 +528,25 @@ async function createLicense() {
     }
 
     try {
-        const response = await axios.post(`${API_BASE}/licenses`, {
+
+        const response = await client.sendEncryptedPostRequest('/licenses', {
             product_id: parseInt(productId),
             user_id: userId,
             credit_number: credit_number || 'None',
             machine_code: machine_code || 'None',
             expires_hours: parseInt(expiresHours)
-        });
+        })
         
-        const result = response.data;
-        showAlert(`License created: ${result.license_key}`, 'success');
+        showAlert(`New License created`, 'success');
         
         // Reset form and reload data
         document.getElementById('user-id').value = '';
-        await loadLicenses();
-        await loadProducts();
+        document.getElementById('machine-code').value = '';
+        
         await loadStats();
+        await loadProducts();
+        await loadLicenses();
+        
         
     } catch (error) {
         showAlert(error.response?.data?.error || 'Failed to create license', 'danger');
@@ -589,11 +587,12 @@ async function createProduct() {
     }
     
     try {
-        const response = await axios.post(`${API_BASE}/products`, {
+        
+        const response = await client.sendEncryptedPostRequest('/products', {
             name: name,
             description: description || null,
             max_devices: parseInt(maxDevices)
-        });
+        })
         
         showAlert('Product created successfully!', 'success');
         bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
@@ -697,7 +696,6 @@ async function updateProductSelect() {
         }
         if(setting_select !== null)
         {
-            console.log(setting_select)
             setting_select.innerHTML = '<option value="">Select Product...</option>' + 
                 products.map(product =>
                     `<option value="${product.id}">${product.name}</option>`
@@ -1093,12 +1091,12 @@ async function createProductSetting() {
     }
     
     try {
-        const response = await axios.post(`${API_BASE}/settings`, {
+         const response = await client.sendEncryptedPostRequest('/settings', {
             product_id: parseInt(productId),
             number_of_credits: parseInt(numberOfCredits),
             license_duration_hours: parseInt(licenseDurationHours)
-        });
-                
+        })        
+
         showAlert('Product setting created successfully!', 'success');
         
         // Reload settings
