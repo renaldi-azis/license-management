@@ -46,9 +46,6 @@ def get_all_settings_route():
 @bp.route('/<int:product_id>', methods=['GET'])
 @jwt_required()
 def get_setting_route(product_id):
-    username = get_jwt_identity()
-    if get_role_by_username(username) != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
     
     setting = get_setting_by_product_id(product_id)
     if setting:

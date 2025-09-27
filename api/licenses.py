@@ -65,11 +65,7 @@ def revoke_license_route(license_key):
 @rate_limited(limit='10 per minute')  # Limit license retrieval
 @jwt_required()
 @validate_license_key
-def get_license_route(license_key):
-    username = get_jwt_identity()
-    if get_role_by_username(username) != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
+def get_license_route(license_key):   
     result = get_license_detail(license_key)
     if result:
         return jsonify(result)

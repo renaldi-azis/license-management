@@ -60,11 +60,7 @@ def create_product_route():
 @rate_limited(limit='20 per minute')  # Limit product updates
 @jwt_required()
 @validate_json({'name': str, 'max_devices': int})
-def update_product_route(product_id):
-    username = get_jwt_identity()
-    if get_role_by_username(username) != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
+def update_product_route(product_id):    
     data = request.get_json()
     result = update_product(
         product_id=product_id,
