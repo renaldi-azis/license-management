@@ -874,7 +874,7 @@ async function removeProduct(productId) {
     
     try {
         const response = await axios.delete(`${API_BASE}/products/${productId}`);
-        if (response.data.success) {
+        if(response){
             showAlert('Product deleted successfully', 'success');
             await loadProducts();
             await updateProductSelect();
