@@ -203,7 +203,7 @@ class SecureLicenseClient {
         try {
             const encryptedRequest = await this.aesEncrypt(data);
             console.log(encryptedRequest)
-            const response = await axios.post(`/api/${endpoint}`, {
+            const response = await axios.post(`/api${endpoint}`, {
                 encryptedRequest
             });
 
