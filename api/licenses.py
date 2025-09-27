@@ -241,7 +241,7 @@ def automate_license_route():
         product_id=product_id,
         user_id=data['user_id'],
         credit_number=number_of_credits,
-        machine_code=data['machine_code'],
+        machine_code=hash_machine_code(data.get('machine_code', 'None')),
         expires_hours=expires_hours
     )
     

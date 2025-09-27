@@ -3,6 +3,10 @@ from models.database import get_db_connection
 class Product:  
     @staticmethod
     def create(name, description=None, max_devices=1):
+        # Check name uniqueness
+        existing = Product.get_by_name(name)
+        if existing:
+            return {'success': False, 'error': 'Product name is already in use'}
         """Create a new product."""
         with get_db_connection() as conn:
             c = conn.cursor()

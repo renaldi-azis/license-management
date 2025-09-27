@@ -113,33 +113,7 @@
                 </div>
                 <div class="dialog-footer">
                     <button class="btn btn-secondary" id="cancelProfile">Cancel</button>
-                    <button class="btn btn-primary" id="saveProfile">Save Changes</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Settings Dialog -->
-        <div class="dialog-overlay" id="settingsDialog">
-            <div class="dialog">
-                <div class="dialog-header">
-                    <h3 class="dialog-title">Settings</h3>
-                    <button class="dialog-close" id="closeSettingsDialog">&times;</button>
-                </div>
-                <div class="dialog-body">
-                    <!-- <div class="form-group">
-                        <label class="form-label">Theme</label>
-                        <div>
-                            <input type="radio" id="themeLight" name="theme" value="light" checked>
-                            <label for="themeLight">Light</label>
-                            
-                            <input type="radio" id="themeDark" name="theme" value="dark" style="margin-left: 15px;">
-                            <label for="themeDark">Dark</label>
-                        </div>
-                    </div> -->                    
-                </div>
-                <div class="dialog-footer">
-                    <button class="btn btn-secondary" id="cancelSettings">Cancel</button>
-                    <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+                    <button class="btn btn-primary" id="saveProfile" onclick="updateUserProfile()">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -206,13 +180,6 @@
             profileDialog.classList.add('active');
         });
         
-        // // Open settings dialog
-        // document.getElementById('settingsLink').addEventListener('click', function(e) {
-        //     e.preventDefault();
-        //     document.getElementById('userDropdown').classList.remove('show');
-        //     settingsDialog.classList.add('active');
-        // });
-        
         // Close profile dialog
         document.getElementById('closeProfileDialog').addEventListener('click', function() {
             profileDialog.classList.remove('active');
@@ -221,28 +188,30 @@
         document.getElementById('cancelProfile').addEventListener('click', function() {
             profileDialog.classList.remove('active');
         });
-        
-        // // Close settings dialog
-        // document.getElementById('closeSettingsDialog').addEventListener('click', function() {
-        //     settingsDialog.classList.remove('active');
-        // });
-        
-        // document.getElementById('cancelSettings').addEventListener('click', function() {
-        //     settingsDialog.classList.remove('active');
-        // });
-        
-        // Close dialogs when clicking outside
         profileDialog.addEventListener('click', function(e) {
             if (e.target === profileDialog) {
                 profileDialog.classList.remove('active');
             }
         });
-        
-        // settingsDialog.addEventListener('click', function(e) {
-        //     if (e.target === settingsDialog) {
-        //         settingsDialog.classList.remove('active');
-        //     }
-        // });
+
+        function updateUserProfile() {
+            const firstName = document.getElementById('profileFirstName').value.trim();
+            const lastName = document.getElementById('profileLastName').value.trim();
+            
+            axios.put('/api/auth/users/{{ current_user["username"] }}', {
+                first_name: firstName,
+                last_name: lastName
+            })
+            .then(response => {
+                alert('Profile updated successfully!');
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error updating profile:', error);
+                alert('Failed to update profile. Please try again.');
+            });           
+        }
+
     </script>
     {% block extra_js %}{% endblock %}
     <script src="{{ url_for('static', filename='js/admin.js') }}"></script>

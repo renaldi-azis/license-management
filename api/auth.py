@@ -69,6 +69,8 @@ def login():
         return jsonify({'error': 'Invalid credentials'}), 401
     return render_template('login.html')
 
+
+
 @bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     resp = make_response(redirect('/admin'))
@@ -96,6 +98,21 @@ def list_users():
             'total': total_pages
         }
     })
+
+@bp.route('/users/<string:username>', methods=['PUT'])
+@rate_limited(limit='20 per minute')  # Limit user updates
+@jwt_required()
+def update_user_info(username):
+    current_user = get_jwt_identity()
+    if get_role_by_username(current_user) != 'admin' and current_user != username:
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.get_json()
+    first_name = data.get('first_name')
+    last_name = data.get('last_name')
+    
+    update_user(username, first_name=first_name, last_name=last_name)    
+    return jsonify({'result': 'success'})
 
 @bp.route('/users/<string:username>/<string:role>', methods=['PUT'])
 @rate_limited(limit='20 per minute')  # Limit user listing

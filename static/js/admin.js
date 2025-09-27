@@ -170,11 +170,8 @@ class SecureLicenseClient {
             if (typeof encryptedData === 'string') {
                 // Step 1: Base64 decode the string
                 const decodedString = atob(encryptedData);
-                console.log('After base64 decode:', decodedString);
-                
                 // Step 2: Parse the JSON
                 encryptedData = JSON.parse(decodedString);
-                console.log('After JSON parse:', encryptedData);
             }
             
             // Now decrypt normally
@@ -203,11 +200,9 @@ class SecureLicenseClient {
         try {
             const encryptedRequest = await this.aesEncrypt(data);
             const fullUrl = `${window.location.origin}/api${endpoint}`;
-            console.log('Making request to:', fullUrl);
             const response = await axios.post(fullUrl, {
                 encryptedRequest
             });
-
             if (response.ok) {
                 const encryptedResponse = await response.json();
                 return await this.aesDecrypt(encryptedResponse);
@@ -215,7 +210,7 @@ class SecureLicenseClient {
                 return { error: `Request failed: ${response.status}` };
             }
         } catch (error) {
-            return { error: `Request failed: ${error.message}` };
+            throw error
         }
     }
 }
@@ -312,7 +307,7 @@ async function loadProducts(page = 1, query = '') {
             showNoProducts(); return;
         }        
         tbody.innerHTML = products.map(product => `
-            <tr>
+            <tr class="fade-in">
                 <td><strong>${product.name}</strong></td>
                 <td>${product.description || ''}</td>
                 <td>
@@ -366,13 +361,13 @@ async function loadUsers(page = 1) {
         
         let no = 1;
         tbody.innerHTML = users.map(user => `
-            <tr>
+            <tr class="fade-in">
                 <td>${no++}</td>
                 <td>${user.username}</td>
                 <td>${user.first_name || ''}&nbsp;${user.last_name || ''}</td>                
                 <td>  
                     <span class="badge bg-${changeRoleToStatus(user.role)}">
-                        ${user.role}
+                        ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                     </span>
                 </td>
                 <td>
@@ -425,7 +420,7 @@ async function changeUserRole(username,role) {
         showAlert('User role changed successfully', 'success');
         loadUsers();
     }catch(error){
-        showAlert(error.response?.data?.error || 'Failed to change user role', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to change user role', 'error');
     }
 }
 
@@ -439,7 +434,7 @@ async function removeUser(username) {
         showAlert('User deleted successfully', 'success');
         loadUsers();
     }catch(error){
-        showAlert( error.response?.data?.error ||'Failed to delete user', 'danger');
+        showAlert( error.response?.data?.error ||'Failed to delete user', 'error');
     }
 
 }
@@ -474,7 +469,7 @@ async function loadLicenses(page = 1 , query = '') {
                 <td>${license.user_id}</td>
                 <td>
                     <span class="badge bg-${changeStatus(license.status)}">
-                        ${license.status}
+                        ${license.status.charAt(0).toUpperCase() + license.status.slice(1)}
                     </span>
                 </td>
                 <td>
@@ -550,18 +545,16 @@ async function createLicense() {
         
         
     } catch (error) {
-        showAlert(error.response?.data?.error || 'Failed to create license', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to create license', 'error');
     }
 }
 
 async function backupLicenses() {
     try {
-        const res_encrypted = await axios.get(`${API_BASE}/licenses/backup`, {
+        const res = await axios.get(`${API_BASE}/licenses/backup`, {
             responseType: 'blob'
         });
-        const encryptedResponse = res_encrypted.data.encrypted_data
-        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
-        const url = window.URL.createObjectURL(new Blob([res]));
+        const url = window.URL.createObjectURL(new Blob([res.data]));
         const link = document.createElement('a');
         link.href = url;
         link.setAttribute('download', `licenses_backup_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -572,7 +565,7 @@ async function backupLicenses() {
         showAlert('License backup downloaded', 'success');
         
     } catch (error) {
-        showAlert(error.response?.data?.error || 'Failed to backup licenses', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to backup licenses', 'error');
     }
 }
 
@@ -587,8 +580,7 @@ async function createProduct() {
         return;
     }
     
-    try {
-        
+    try {        
         const response = await client.sendEncryptedPostRequest('/products', {
             name: name,
             description: description || null,
@@ -608,7 +600,7 @@ async function createProduct() {
         }
         
     } catch (error) {
-        showAlert(error.response?.data?.error || 'Failed to create product', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to create product', 'error');
     }
 }
 
@@ -624,7 +616,7 @@ async function revokeLicense(licenseKey) {
         await loadLicenses();
         await loadStats();
     } catch (error) {
-        showAlert(error.response?.data?.error || 'Failed to revoke license', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to revoke license', 'error');
     }
 }
 
@@ -640,7 +632,7 @@ async function removeLicense(licenseKey) {
         await loadLicenses();
         await loadStats();
     } catch (error) {
-        showAlert(error.response?.data?.error || 'Failed to delete license', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to delete license', 'error');
     }
 }
 
@@ -724,24 +716,160 @@ async function updateProductSelect() {
     }
 }
 
+// Add CSS animation for progress bar
+if (!document.querySelector('#alert-styles')) {
+    const style = document.createElement('style');
+    style.id = 'alert-styles';
+    style.textContent = `
+        @keyframes progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+        
+        .btn-close-custom:hover {
+            opacity: 1 !important;
+            transform: scale(1.1);
+        }
+        
+        .custom-alert:hover {
+            transform: translateX(0) scale(1.02) !important;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.2) !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Show alert messages
 function showAlert(message, type = 'info') {
     const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    
+    // Enhanced styling with smooth animations and modern design
+    alertDiv.className = `custom-alert custom-alert-${type} alert-dismissible fade show`;
+    alertDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 320px;
+        max-width: 400px;
+        border: none;
+        padding: 16px 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        backdrop-filter: blur(10px);
+        transform: translateX(400px);
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+    `;
+    
+    // Color schemes for different alert types
+    const styles = {
+        info: {
+            background: 'rgba(59, 130, 246, 0.95)',
+            color: 'white',
+            icon: ' '
+        },
+        success: {
+            background: 'rgba(34, 197, 94, 0.95)',
+            color: 'white',
+            icon: ' '
+        },
+        warning: {
+            background: 'rgba(234, 179, 8, 0.95)',
+            color: 'white',
+            icon: ' '
+        },
+        error: {
+            background: 'rgba(239, 68, 68, 0.95)',
+            color: 'white',
+            icon: ' '
+        }
+    };
+    
+    const style = styles[type] || styles.info;
+    
+    alertDiv.style.background = style.background;
+    alertDiv.style.color = style.color;
+    
     alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="font-size: 18px; flex-shrink: 0;">${style.icon}</span>
+            <div style="flex: 1;">
+                <div style="font-weight: 600; margin-bottom: 4px; font-size: 15px;">
+                    ${type.charAt(0).toUpperCase() + type.slice(1)}
+                </div>
+                <div style="opacity: 0.95;">${message}</div>
+            </div>
+            <button type="button" 
+                    class="btn-close-custom" 
+                    style="
+                        background: none;
+                        border: none;
+                        color: currentColor;
+                        font-size: 18px;
+                        cursor: pointer;
+                        opacity: 0.7;
+                        padding: 4px;
+                        margin-left: 8px;
+                        transition: opacity 0.2s;
+                        flex-shrink: 0;
+                    "
+                    onclick="this.parentElement.parentElement.remove()">
+                ✕
+            </button>
+        </div>
+        <div class="progress-bar" style="
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+        ">
+            <div class="progress-fill" style="
+                width: 100%;
+                height: 100%;
+                background: rgba(255, 255, 255, 0.8);
+                animation: progress 5s linear forwards;
+            "></div>
+        </div>
     `;
     
     document.body.appendChild(alertDiv);
     
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (alertDiv.parentNode) {
-            alertDiv.remove();
-        }
-    }, 5000);
+    // Animate in
+    requestAnimationFrame(() => {
+        alertDiv.style.transform = 'translateX(0)';
+        alertDiv.style.opacity = '1';
+    });
+    
+    // Auto remove after 5 seconds with smooth animation
+    const removeAlert = () => {
+        alertDiv.style.transform = 'translateX(400px)';
+        alertDiv.style.opacity = '0';
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 400);
+    };
+    
+    const timeout = setTimeout(removeAlert, 5000);
+    
+    // Pause auto-remove on hover
+    alertDiv.addEventListener('mouseenter', () => {
+        clearTimeout(timeout);
+        alertDiv.querySelector('.progress-fill').style.animationPlayState = 'paused';
+    });
+    
+    alertDiv.addEventListener('mouseleave', () => {
+        const newTimeout = setTimeout(removeAlert, 5000);
+        alertDiv.querySelector('.progress-fill').style.animationPlayState = 'running';
+    });
 }
 
 // Stats animation
@@ -776,7 +904,7 @@ async function editProduct(productId) {
         const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
         const product = res.products.find(p => p.id === productId);
         if (!product) {
-            showAlert('Product not found', 'danger');
+            showAlert('Product not found', 'error');
             return;
         }
         // Create modal HTML
@@ -836,7 +964,7 @@ async function editProduct(productId) {
                 await loadProducts();
                 await updateProductSelect();
             } catch (error) {
-                showAlert(error.response?.data?.error || 'Failed to update product', 'danger');
+                showAlert(error.response?.data?.error || 'Failed to update product', 'error');
             }
         };
 
@@ -846,7 +974,7 @@ async function editProduct(productId) {
         });
 
     } catch (error) {
-        showAlert('Failed to load product for editing', 'danger');
+        showAlert('Failed to load product for editing', 'error');
     }
 }
 
@@ -866,7 +994,7 @@ async function viewProductStats(productId) {
             this.remove();
         });
     } catch (error) {
-        showAlert('Failed to load product stats', 'danger');
+        showAlert('Failed to load product stats', 'error');
     }
 }
 
@@ -884,10 +1012,10 @@ async function removeProduct(productId) {
             await loadLicenses();
             await loadStats();
         } else {
-            showAlert(response.data.error || 'Failed to delete product', 'danger');
+            showAlert(response.data.error || 'Failed to delete product', 'error');
         }
     } catch (error) {
-        showAlert(error.response?.data?.error || 'Failed to delete product', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to delete product', 'error');
     }
 }
 
@@ -971,10 +1099,8 @@ if(document.getElementById('product-search-select'))
     document.getElementById('product-search-select').addEventListener('change',function(e){
         const select = document.getElementById('product-search-select');
         const selectedValues = Array.from(select.selectedOptions).map(option => option.innerHTML);
-        console.log(document.getElementById('search-license-input').value);
         const key_search = document.getElementById('search-license-input').value.trim();
         const query = selectedValues + ',' + key_search;
-        console.log(query);
         loadLicenses(1, query);
         return selectedValues;
     })
@@ -1063,7 +1189,7 @@ async function loadSettings(page = 1, query = '') {
             showNoSettings(); return;
         }        
         tbody.innerHTML = settings.map(setting => `
-            <tr>
+            <tr class="fade-in">
                 <td><strong>${setting.product_name}</strong></td>
                 <td>${setting.number_of_credits}</td>
                 <td>${setting.license_duration_hours}</td>
@@ -1106,7 +1232,7 @@ async function createProductSetting() {
         await loadSettings();
         
     } catch (error) {
-        showAlert(error.response?.data?.error || 'Failed to create product setting', 'danger');
+        showAlert(error.response?.data?.error || 'Failed to create product setting', 'error');
     }
 }
 
@@ -1119,7 +1245,7 @@ async function editSetting(productId) {
         const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
         const setting = res;
         if (!setting) {
-            showAlert('Setting not found', 'danger');
+            showAlert('Setting not found', 'error');
             return;
         }
 
@@ -1175,7 +1301,7 @@ async function editSetting(productId) {
                 modal.hide();
                 await loadSettings();
             } catch (error) {
-                showAlert(error.response?.data?.error || 'Failed to update setting', 'danger');
+                showAlert(error.response?.data?.error || 'Failed to update setting', 'error');
             }
         };
 
@@ -1185,7 +1311,7 @@ async function editSetting(productId) {
         });
 
     } catch (error) {
-        showAlert('Failed to load setting for editing', 'danger');
+        showAlert('Failed to load setting for editing', 'error');
     }
 }
 

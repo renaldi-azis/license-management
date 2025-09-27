@@ -651,6 +651,7 @@ body {
     border-top: 1px solid #e2e8f0;
     vertical-align: middle;
     text-align: center;
+    max-width: 300px;
 }
 
 .table th{
@@ -844,7 +845,7 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(0px); }
     to { opacity: 1; transform: translateY(0); }
 }
 

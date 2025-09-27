@@ -131,7 +131,7 @@ def create_app():
     @app.after_request
     def encrypt_response(response):
         """Encrypt JSON responses if session and AES key are established"""
-        if(request.endpoint == 'auth.login' or request.endpoint == 'auth.register'):
+        if(request.endpoint == 'auth.login' or request.endpoint == 'auth.register' or request.endpoint == 'licenses.backup_licenses'):
             return response
         if (response.content_type == 'application/json' or not request.endpoint in ['/', '/api/auth/login', '/api/auth/register', 'auth.login', 'auth.register']) and response.status_code == 200:
             try:                
