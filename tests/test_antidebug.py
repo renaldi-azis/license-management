@@ -1,6 +1,6 @@
 import HttpAntiDebug
 
-req = HttpAntiDebug.get("https://jsonip.com")
+req = HttpAntiDebug.get("https://richtoolsmmo.com")
 print(req.status_code)
 print(req.text)
 print(req.headers)
