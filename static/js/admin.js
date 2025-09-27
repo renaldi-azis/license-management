@@ -202,8 +202,9 @@ class SecureLicenseClient {
     async sendEncryptedPostRequest(endpoint, data) {
         try {
             const encryptedRequest = await this.aesEncrypt(data);
-            console.log(encryptedRequest)
-            const response = await axios.post(`/api${endpoint}`, {
+            const fullUrl = `${window.location.origin}/api${endpoint}`;
+            console.log('Making request to:', fullUrl);
+            const response = await axios.post(fullUrl, {
                 encryptedRequest
             });
 
@@ -593,16 +594,18 @@ async function createProduct() {
             description: description || null,
             max_devices: parseInt(maxDevices)
         })
-        
-        showAlert('Product created successfully!', 'success');
-        bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
-        
-        // Reset form
-        document.getElementById('product-form').reset();
-        
-        // Reload products
-        await loadProducts();
-        await updateProductSelect();
+        if(response)
+        {
+            showAlert('Product created successfully!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+            
+            // Reset form
+            document.getElementById('product-form').reset();
+            
+            // Reload products
+            await loadProducts();
+            await updateProductSelect();
+        }
         
     } catch (error) {
         showAlert(error.response?.data?.error || 'Failed to create product', 'danger');
