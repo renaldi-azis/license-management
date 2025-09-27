@@ -74,11 +74,7 @@ def update_product_route(product_id):
 @bp.route('/<int:product_id>/stats', methods=['GET'])
 @rate_limited(limit='30 per minute')  # Limit product stats retrieval
 @jwt_required()
-def product_stats(product_id):
-    username = get_jwt_identity()
-    if get_role_by_username(username) != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403
-    
+def product_stats(product_id):    
     stats = get_product_stats(product_id)
     return jsonify(stats)
 
