@@ -352,7 +352,7 @@ async function loadUsers(page = 1) {
         const encryptedResponse = res_encrypted.data.encrypted_data
         const res = JSON.parse(await client.aesDecrypt(encryptedResponse))        
         const users = res.users || [];
-        const pagination = res.data.pagination || { page: 1, total: 1 };
+        const pagination = res.pagination || { page: 1, total: 1 };
         if(users.length == 0) {
             document.getElementById('users-table').style.display = 'none';
             document.getElementById('users-pagination').style.display = 'none';
