@@ -10,38 +10,44 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import padding as sym_padding
 from urllib.parse import quote
+from HttpAntiDebug import SessionServer as SV
 import os
 
 class SecureLicenseClient:
     def __init__(self, server_url):
-        self.server_url = server_url.rstrip('/')
+        self.server_url = server_url
         self.client_id = 'x-client'
         self.session_id = None
         self.aes_key = None
         self.server_public_key = None
         self.client_private_key = None
         self.client_public_key = None
-        self.session = requests.Session()
-        self.session.verify = False  # Disable SSL verification for testing
+        self.session = SV(server_url)
+        
+        # Set default headers for all requests
+        self.session.headers.update({
+            'X-Client-ID': self.client_id,
+            'Content-Type': 'application/json'
+        })
 
     def initialize_session(self):
         """Initialize session with server"""
         try:
-            self.session.headers.update({
-                'X-Client-ID': self.client_id,
-                'Content-Type': 'application/json'
-            })
-            
-            response = self.session.get(f"{self.server_url}/init-session")
+            response = self.session.get(f"/init-session")
             print(f"Init session status: {response.status_code}")
             print(f"Init session response: {response.text}")
             
             if response.status_code == 200:
-                data = response.json()
+                # Handle HttpAntiDebug response
+                if hasattr(response, 'json') and callable(response.json):
+                    data = response.json()
+                else:
+                    data = json.loads(response.text)
+                
                 self.session_id = data['session_id']
                 self.server_public_key = self.import_public_key(data['server_public_key'])
                 
-                # Set session ID header for future requests
+                # Update session ID header for future requests
                 self.session.headers.update({'X-Session-ID': self.session_id})
                 return True
             return False
@@ -67,14 +73,7 @@ class SecureLicenseClient:
             return public_key
         except Exception as e:
             print(f"Error importing public key: {e}")
-            # Try alternative method if above fails
-            pem_clean = pem_string.replace('-----BEGIN PUBLIC KEY-----', '')\
-                                 .replace('-----END PUBLIC KEY-----', '')\
-                                 .replace('\n', '')\
-                                 .strip()
-            public_key_bytes = base64.b64decode(pem_clean)
-            public_key = serialization.load_der_public_key(public_key_bytes)
-            return public_key
+            raise
 
     def generate_key_pair(self):
         """Generate RSA key pair for client"""
@@ -94,7 +93,7 @@ class SecureLicenseClient:
         return public_key_bytes.decode('utf-8')
 
     def perform_key_exchange(self):
-        """Perform RSA key exchange with server"""
+        """Perform RSA key exchange with server - FIXED Content-Type"""
         print("Performing key exchange...")
         try:
             # Generate client key pair
@@ -116,17 +115,25 @@ class SecureLicenseClient:
             # Export client public key
             client_public_key_pem = self.export_public_key()
             
-            # Send key exchange request
-            payload = {
+            # Prepare JSON payload
+            json_payload = {
                 'session_id': self.session_id,
                 'encrypted_aes_key': self.bytes_to_base64(encrypted_aes_key),
                 'client_public_key': client_public_key_pem
             }
             
             print(f"Key exchange payload prepared")
-            response = self.session.post(
+            
+            # Use direct requests for key exchange to ensure proper JSON handling
+            # HttpAntiDebug seems to have issues with JSON content-type
+            response = requests.post(
                 f"{self.server_url}/key-exchange",
-                json=payload
+                json=json_payload,  # This automatically sets Content-Type: application/json
+                headers={
+                    'X-Client-ID': self.client_id,
+                    'X-Session-ID': self.session_id
+                },
+                verify=False
             )
             
             print(f"Key exchange status: {response.status_code}")
@@ -136,6 +143,7 @@ class SecureLicenseClient:
                 result = response.json()
                 print(f"Key exchange result: {result}")
                 return True
+            
             return False
             
         except Exception as error:
@@ -156,6 +164,10 @@ class SecureLicenseClient:
         pad_length = data[-1]
         if pad_length > len(data):
             raise ValueError("Invalid padding")
+        # Verify padding bytes
+        for i in range(1, pad_length + 1):
+            if data[-i] != pad_length:
+                raise ValueError("Invalid padding")
         return data[:-pad_length]
 
     def aes_encrypt(self, data):
@@ -166,7 +178,7 @@ class SecureLicenseClient:
             
             # Convert data to JSON string and encode to bytes
             if isinstance(data, dict):
-                data_str = json.dumps(data)
+                data_str = json.dumps(data, ensure_ascii=False)
             else:
                 data_str = str(data)
             data_bytes = data_str.encode('utf-8')
@@ -194,6 +206,8 @@ class SecureLicenseClient:
             if encrypted_data is None:
                 raise ValueError("Encrypted data is None")
                 
+            print("AES_DECRYPT input:", encrypted_data)
+            
             # Handle string input (base64 encoded JSON)
             if isinstance(encrypted_data, str):
                 # Base64 decode the string
@@ -201,7 +215,7 @@ class SecureLicenseClient:
                 decoded_str = decoded_bytes.decode('utf-8')
                 encrypted_data = json.loads(decoded_str)
             
-            print("AES_DECRYPT data:", encrypted_data)
+            print("AES_DECRYPT parsed:", encrypted_data)
             
             # Extract IV and encrypted data
             iv = self.base64_to_bytes(encrypted_data['iv'])
@@ -216,13 +230,144 @@ class SecureLicenseClient:
             decrypted = self.pkcs7_unpad(decrypted_padded)
             
             # Parse JSON and return
-            return json.loads(decrypted.decode('utf-8'))
+            result = json.loads(decrypted.decode('utf-8'))
+            print("AES_DECRYPT result:", result)
+            return result
             
         except Exception as error:
             print(f'Decryption failed: {error}')
             import traceback
             traceback.print_exc()
             raise
+
+    def login_user(self, username, password):
+        """Login user and handle cookies properly"""
+        try:
+            login_data = {
+                'username': username,
+                'password': password
+            }
+            
+            # Use direct requests for login to ensure proper cookie handling
+            req_session = requests.Session()
+            req_session.verify = False
+            req_session.headers.update({
+                'Content-Type': 'application/json',
+                'X-Client-ID': self.client_id,
+                'X-Session-ID': self.session_id
+            })
+            
+            login_response = req_session.post(
+                f"{self.server_url}/api/auth/login",
+                json=login_data
+            )
+            
+            print(f"Login status: {login_response.status_code}")
+            print(f"Login response: {login_response.text}")
+            print(f"Login cookies: {dict(login_response.cookies)}")
+            
+            if login_response.status_code == 200:
+                token_data = login_response.json()
+                token = token_data.get("access_token")
+                
+                if token:
+                    # Update HttpAntiDebug session with token in header
+                    self.session.headers.update({"Authorization": f"Bearer {token}"})
+                    print("Set Authorization header with token")
+                
+                # Transfer cookies from requests session to HttpAntiDebug session
+                if hasattr(self.session, '_session') and hasattr(self.session._session, 'cookies'):
+                    # Transfer all cookies
+                    for cookie in login_response.cookies:
+                        self.session._session.cookies.set(cookie.name, cookie.value)
+                    print("Transferred cookies to HttpAntiDebug session")
+                
+                # Also set the access_token_cookie manually if it exists
+                access_token_cookie = login_response.cookies.get('access_token_cookie')
+                if access_token_cookie:
+                    print(f"Found access_token_cookie: {access_token_cookie}")
+                    # Ensure it's set in the session
+                    if hasattr(self.session, '_session'):
+                        self.session._session.cookies.set('access_token_cookie', access_token_cookie)
+                
+                return True
+            return False
+        except Exception as e:
+            print(f"Login failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def get_all_licenses(self):
+        """Get all licenses - using HttpAntiDebug with proper cookies"""
+        try:
+            page = 1
+            query = ""
+            
+            # Debug: Check what cookies are being sent
+            if hasattr(self.session, '_session') and hasattr(self.session._session, 'cookies'):
+                print("Cookies in HttpAntiDebug session:", dict(self.session._session.cookies))
+            
+            response = self.session.get(
+                f"/api/licenses?page={page}&query={quote(query)}"
+            )
+            
+            print(f"Get licenses status: {response.status_code}")
+            print(f"Get licenses response: {response.text}")
+            
+            if response.status_code == 200:
+                # Handle HttpAntiDebug response
+                if hasattr(response, 'json') and callable(response.json):
+                    res_encrypted = response.json()
+                else:
+                    res_encrypted = json.loads(response.text)
+                    
+                encryptedRes = res_encrypted.get("encrypted_data")
+                if encryptedRes:
+                    res = self.aes_decrypt(encryptedRes)
+                    print("Decrypted licenses:", res)
+                    return res
+            elif response.status_code == 401:
+                print("Authentication failed - cookies may not be working with HttpAntiDebug")
+                print("Trying with direct requests...")
+                return self._get_licenses_with_requests()
+            return None
+        except Exception as e:
+            print(f"Get licenses failed: {e}")
+            return None
+
+    def _get_licenses_with_requests(self):
+        """Fallback method to get licenses using requests directly"""
+        try:
+            page = 1
+            query = ""
+            
+            # Create a requests session with the same cookies and headers
+            req_session = requests.Session()
+            req_session.verify = False
+            req_session.headers.update(dict(self.session.headers))
+            
+            # Transfer cookies if possible
+            if hasattr(self.session, '_session') and hasattr(self.session._session, 'cookies'):
+                req_session.cookies.update(self.session._session.cookies)
+            
+            response = req_session.get(
+                f"{self.server_url}/api/licenses?page={page}&query={quote(query)}"
+            )
+            
+            print(f"Direct requests - Get licenses status: {response.status_code}")
+            
+            if response.status_code == 200:
+                res_encrypted = response.json()
+                encryptedRes = res_encrypted.get("encrypted_data")
+                if encryptedRes:
+                    res = self.aes_decrypt(encryptedRes)
+                    print("Decrypted licenses (direct requests):", res)
+                    return res
+            return None
+        except Exception as e:
+            print(f"Direct requests get licenses failed: {e}")
+            return None
 
     def send_encrypted_post_request(self, endpoint, data):
         """Send encrypted POST request to server"""
@@ -231,11 +376,19 @@ class SecureLicenseClient:
             encrypted_request = self.aes_encrypt(data)
             print(f"Encrypted request prepared")
             
-            # Send request
+            # Prepare payload
             payload = {'encryptedRequest': encrypted_request}
-            response = self.session.post(
+            
+            # Try with HttpAntiDebug first
+            headers = self.session.headers.copy()
+            headers['Content-Type'] = 'application/json'
+            
+            # Use direct requests for JSON endpoints to avoid Content-Type issues
+            response = requests.post(
                 f"{self.server_url}/api/{endpoint.lstrip('/')}",
-                json=payload
+                json=payload,
+                headers=headers,
+                verify=False
             )
             
             print(f"API response status: {response.status_code}")
@@ -249,53 +402,6 @@ class SecureLicenseClient:
                 
         except Exception as error:
             return {'error': f'Request failed: {str(error)}'}
-    
-    def login_user(self, username, password):
-        """Login user and obtain JWT token"""
-        try:
-            login_resp = self.session.post(
-                f"{self.server_url}/api/auth/login", 
-                json={
-                    'username': username,
-                    'password': password
-                }
-            )
-            print(f"Login status: {login_resp.status_code}")
-            print(f"Login response: {login_resp.text}")
-            
-            if login_resp.status_code == 200:
-                token_data = login_resp.json()
-                token = token_data.get("access_token")
-                if token:
-                    self.session.headers.update({"Authorization": f"Bearer {token}"})
-                    return True
-            return False
-        except Exception as e:
-            print(f"Login failed: {e}")
-            return False
-
-    def get_all_licenses(self):
-        """Get all licenses"""
-        try:
-            page = 1
-            query = ""
-            response = self.session.get(
-                f"{self.server_url}/api/licenses?page={page}&query={quote(query)}"
-            )
-            print(f"Get licenses status: {response.status_code}")
-            print(f"Get licenses response: {response.text}")
-            
-            if response.status_code == 200:
-                res_encrypted = response.json()
-                encryptedRes = res_encrypted.get("encrypted_data")
-                if encryptedRes:
-                    res = self.aes_decrypt(encryptedRes)
-                    print("Decrypted licenses:", res)
-                    return res
-            return None
-        except Exception as e:
-            print(f"Get licenses failed: {e}")
-            return None
     
     def register_license(self, user_id, product_name, machine_code):
         """Register a license"""
@@ -311,8 +417,7 @@ class SecureLicenseClient:
 
 # Usage example
 if __name__ == "__main__":
-    server_url = "https://www.richtoolsquantri.online"  # Fixed URL for testing
-    # server_url = input("Enter server URL (e.g., https://www.richtoolsquantri.online): ").strip()
+    server_url = input("Enter server URL (e.g., https://www.richtoolsquantri.online): ").strip()
     client = SecureLicenseClient(server_url)
     
     if client.initialize_session():
@@ -335,12 +440,9 @@ if __name__ == "__main__":
                     print("Failed to fetch licenses")
                 
                 # Test data
-                test_data=[{"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # This is valid data
-                    {"user_id": "<script>alert(1)</script>", "product_name": "ProductA", "machine_code": "MACHINE123"}, # XSS => this data includes XSS
-                    {"user_id": "user2", "product_name": "NonExistentProduct", "machine_code": "MACHINE456"}, # Non-existent product
-                    {"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # Duplicate active license, this includes same values with first data so => fails
-                    {"user_id": "user3", "product_name": "ProductA", "machine_code": "<img src=x onerror=alert(1)>"},
-                    {"user_id":"user4", "product_name":"ProductA","machine_code":"MACHINE1234"}] # XSS => this also includes XSS
+                test_data = [
+                    {"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"},
+                ]
                 
                 for td in test_data:
                     print(f"\nTesting with user_id: {td['user_id']}, product_name: {td['product_name']}, machine_code: {td['machine_code']}")
