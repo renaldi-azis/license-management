@@ -303,7 +303,6 @@ def create_app():
     def key_exchange():
         """Complete key exchange with client"""
         data = request.get_json()
-        print(data)
         session_id = data.get('session_id')
         encrypted_aes_key = data.get('encrypted_aes_key')
         client_public_key_pem = data.get('client_public_key')
