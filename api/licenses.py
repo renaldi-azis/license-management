@@ -127,7 +127,7 @@ def delete_license_route(license_key):
     return jsonify(result), 404
 
 @bp.route('/stats', methods=['GET'])
-@rate_limited(limit='10 per minute')  # Limit license stats retrieval
+@rate_limited(limit='40 per minute')  # Limit license stats retrieval
 @jwt_required()
 def license_stats():   
     stats = get_license_stats()
