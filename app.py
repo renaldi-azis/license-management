@@ -83,7 +83,7 @@ class UniversalJSONRequest(Request):
                         pass
         
         print("_parse_form", result)
-        return result if result["json_data"] else None
+        return result["json_data"] if result["json_data"] else None
     
     def _parse_query_as_json(self):
         """Parse query parameters as JSON"""
