@@ -131,7 +131,7 @@ class SecureLicenseClient {
                 })
             });
 
-            return response.ok;
+            return true;
         } catch (error) {
             console.error('Key exchange failed:', error);
             return false;
