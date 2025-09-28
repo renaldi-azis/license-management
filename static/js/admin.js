@@ -105,7 +105,8 @@ class SecureLicenseClient {
 
     performKeyExchange = async () => {
         try {
-            await generateKeyPair();
+            console.log(this)
+            await this.generateKeyPair();
             this.aesKey = await crypto.subtle.generateKey(
                 { name: 'AES-CBC', length: 256 },
                 true,
@@ -224,13 +225,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+client = new SecureLicenseClient()  
+
 // Load complete dashboard data
 async function loadDashboard() {
     try {
 
-        client = new SecureLicenseClient()
+              
         await client.initializeSession()
-        if(await client.performKeyExchange() == false) return;        
+        if(await client.performKeyExchange() == false) return;  
 
         // Load stats
         if(window.location.pathname === '/admin') {
