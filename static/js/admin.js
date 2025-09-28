@@ -6,7 +6,6 @@ let productChoices = null;
 let productSearchChoices = null;
 let productSettingChoices = null;
 
-
 const API_BASE = '/api';
 let client = null;
 let token = localStorage.getItem('token');
@@ -225,13 +224,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-client = new SecureLicenseClient()  
+
 
 // Load complete dashboard data
 async function loadDashboard() {
     try {
 
-              
+        client = new SecureLicenseClient()                
         await client.initializeSession()
         if(await client.performKeyExchange() == false) return;  
 
@@ -312,7 +311,7 @@ async function loadProducts(page = 1, query = '') {
         tbody.innerHTML = products.map(product => `
             <tr class="fade-in">
                 <td><strong>${product.name}</strong></td>
-                <td>${product.description.slice(0, 50) + '...' || ''}</td>
+                <td>${product.description.slice(0, 50) + (product.description?'...':'') || ''}</td>
                 <td>
                     <span class="badge bg-${(product.active_licenses || 0) == 0? "danger" : "success" }">${product.active_licenses || 0} / ${product.total_licenses || 0}</span>
                     
