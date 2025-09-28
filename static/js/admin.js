@@ -105,7 +105,7 @@ class SecureLicenseClient {
 
     performKeyExchange = async () => {
         try {
-            await this.generateKeyPair();
+            await generateKeyPair();
             this.aesKey = await crypto.subtle.generateKey(
                 { name: 'AES-CBC', length: 256 },
                 true,
