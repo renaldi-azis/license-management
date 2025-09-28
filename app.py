@@ -21,72 +21,69 @@ from api.security import session_manager, crypto_manager
 class UniversalJSONRequest(Request):
     def get_json(self, force=False, silent=False, cache=True):
         """
-        Override get_json to handle ANY content type and always return unwrapped data
+        Override get_json to handle ANY content type
         """
         # First try parent method (standard JSON parsing)
-
-        result = super().get_json(force=force, silent=silent, cache=cache)
-        if result is not None:
-            return result
-            
+        try:
+            result = super().get_json(force=force, silent=silent, cache=cache)
+            if result is not None:
+                return result
+        except:
+            pass
         
         # Try alternative parsing methods
-        result = self._parse_any_format()
+        parsers = [
+            self._parse_raw_json,
+            self._parse_form_as_json,
+            self._parse_query_as_json
+        ]
         
-        if result is not None:
-            
-            return result
+        for parser in parsers:
+            try:
+                result = parser()
+                if result is not None:
+                    return result
+            except:
+                continue
         
         # If nothing worked and not silent, raise error
         if not silent:
             raise ValueError("Could not parse JSON from request")
         return None
     
-    def _parse_any_format(self):
-        """
-        Parse data from ANY format and always return unwrapped JSON
-        """
-        # 1. Try raw JSON data
+    def _parse_raw_json(self):
+        """Parse raw request data as JSON"""
         raw_data = self.get_data(as_text=True)
         if raw_data and raw_data.strip():
-                data = json.loads(raw_data)                
-                return data
-            
-        
-        # 2. Try form data (HttpAntiDebug usually sends this)
-        if self.form:
-            form_data = {}
-            for key, value in self.form.items():
-                if isinstance(value, list) and len(value) == 1:
-                    form_data[key] = value[0]
-                else:
-                    form_data[key] = value
-            # Check if form data contains wrapped JSON
-            wrapped_data = self._extract_wrapped_json(form_data)
-            if wrapped_data is not None:
-                return wrapped_data
-            
-            # If no wrapper found, return form data as-is
-            
-            return form_data
-        
+            return json.loads(raw_data)
+        print("_raw_json", raw_data)
         return None
     
-    def _extract_wrapped_json(self, form_data):
-        """
-        Extract JSON from common wrapper fields
-        Returns the unwrapped data or None if no wrapper found
-        """
-        wrapper_fields = ['json_data', 'data', 'payload', 'request', 'body', 'encryptedRequest']
+    def _parse_form_as_json(self):
+        """Parse form data as JSON"""
+        if not self.form:
+            return None
         
-        for wrapper_field in wrapper_fields:
-            if wrapper_field in form_data:
-                json_str = form_data[wrapper_field]
-                if isinstance(json_str, str):
-                    wrapped_data = json.loads(json_str)
-                    return wrapped_data
+        result = {}
+        for key, value in self.form.items():
+            if isinstance(value, list) and len(value) == 1:
+                result[key] = value[0]
+            else:
+                result[key] = value
         
-        return None
+        # Parse JSON strings in form fields
+        for key in list(result.keys()):
+            if isinstance(result[key], str):
+                stripped = result[key].strip()
+                if (stripped.startswith('{') and stripped.endswith('}')) or \
+                   (stripped.startswith('[') and stripped.endswith(']')):
+                    try:
+                        result[key] = json.loads(result[key])
+                    except json.JSONDecodeError:
+                        pass
+        
+        print("_parse_form", result)
+        return result if result else None
     
     def _parse_query_as_json(self):
         """Parse query parameters as JSON"""
@@ -97,6 +94,8 @@ class UniversalJSONRequest(Request):
         for key in list(result.keys()):
             if isinstance(result[key], list) and len(result[key]) == 1:
                 result[key] = result[key][0]
+
+        print("parse_query", result)
         return result
     
 def create_app():
