@@ -266,16 +266,16 @@ def create_app():
                 if session_id:
                     current_session = session_manager.get_session(session_id)
                     if current_session and 'aes_key' in current_session:
-                        encrypted_payload = json.loads(request.get_json())
-                        print(encrypted_payload)
+                        encrypted_payload = request.get_json()
+                        print(eval(encrypted_payload))
                         if 'encryptedRequest' in encrypted_payload:
                             encrypted_data = encrypted_payload['encryptedRequest']
                             # Decrypt the data
                             decrypted_json = crypto_manager.aes_decrypt(
                                 current_session['aes_key'],
-                                encrypted_data
+                                eval(encrypted_data)
                             )
-                            # Replace request.json with decrypted data
+                            # Replace request.data with decrypted data
                             request.data = json.loads(decrypted_json)
             except Exception as e:
                 app.logger.error(f"Request decryption failed: {e}")
