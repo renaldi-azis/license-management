@@ -34,8 +34,7 @@ class UniversalJSONRequest(Request):
         # Try alternative parsing methods
         parsers = [
             self._parse_raw_json,
-            self._parse_form_as_json,
-            self._parse_query_as_json
+            self._parse_form_as_json
         ]
         
         for parser in parsers:
@@ -81,17 +80,6 @@ class UniversalJSONRequest(Request):
                     except json.JSONDecodeError:
                         pass
         return result["json_data"] if result["json_data"] else None
-    
-    def _parse_query_as_json(self):
-        """Parse query parameters as JSON"""
-        if not self.args:
-            return None
-        
-        result = dict(self.args)
-        for key in list(result.keys()):
-            if isinstance(result[key], list) and len(result[key]) == 1:
-                result[key] = result[key][0]
-        return result
     
 def create_app():
     app = Flask(__name__)

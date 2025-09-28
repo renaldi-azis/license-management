@@ -457,9 +457,12 @@ if __name__ == "__main__":
                     print("Failed to fetch licenses")
                 
                 # Test data
-                test_data = [
-                    {"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"},
-                ]
+                test_data=[{"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # This is valid data
+                    {"user_id": "<script>alert(1)</script>", "product_name": "ProductA", "machine_code": "MACHINE123"}, # XSS => this data includes XSS
+                    {"user_id": "user2", "product_name": "NonExistentProduct", "machine_code": "MACHINE456"}, # Non-existent product
+                    {"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # Duplicate active license, this includes same values with first data so => fails
+                    {"user_id": "user3", "product_name": "ProductA", "machine_code": "<img src=x onerror=alert(1)>"},
+                    {"user_id":"user4", "product_name":"ProductA","machine_code":"MACHINE1234"}] # XSS => this also includes XSS
                 
                 for td in test_data:
                     print(f"\nTesting with user_id: {td['user_id']}, product_name: {td['product_name']}, machine_code: {td['machine_code']}")
