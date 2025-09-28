@@ -42,13 +42,11 @@ def create_app():
     app.config['JWT_COOKIE_SAMESITE'] = 'None'  # Required for cross-origin
     jwt = JWTManager(app)
     
-    
     CORS(app, 
      supports_credentials=True,
      origins=["http://localhost:3000", "https://richtoolsquantri.online"],  # Add your domains
      allow_headers=["Content-Type", "Authorization", "X-Client-ID", "X-Session-ID"],
      methods=["GET", "POST", "PUT", "DELETE"])
-
 
     # Initialize database
     with app.app_context():
