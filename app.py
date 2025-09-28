@@ -33,7 +33,6 @@ class UniversalJSONRequest(Request):
         
         # Try alternative parsing methods
         parsers = [
-            self._parse_raw_json,
             self._parse_form_as_json
         ]
         
@@ -49,19 +48,12 @@ class UniversalJSONRequest(Request):
         if not silent:
             raise ValueError("Could not parse JSON from request")
         return None
-    
-    def _parse_raw_json(self):
-        """Parse raw request data as JSON"""
-        raw_data = self.get_data(as_text=True)
-        if raw_data and raw_data.strip():
-            return json.loads(raw_data)
-        return None
-    
+        
     def _parse_form_as_json(self):
         """Parse form data as JSON"""
         if not self.form:
             return None
-        
+        print("Convert Form into Json")
         result = {}
         for key, value in self.form.items():
             if isinstance(value, list) and len(value) == 1:
