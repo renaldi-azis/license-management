@@ -17,8 +17,41 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from api.security import session_manager, crypto_manager
 
+class FlexibleJSONRequest(Request):
+    def get_json(self, force=False, silent=False, cache=True):
+        """
+        Override get_json to be more flexible about Content-Type
+        """
+        # First try the parent method (standard JSON parsing)
+        result = super().get_json(force=force, silent=silent, cache=cache)
+        if result is not None:
+            return result
+        
+        # If standard method failed, try our flexible parsing
+        try:
+            # Try raw data
+            if self.get_data():
+                data = self.get_data(as_text=True)
+                if data.strip():
+                    return json.loads(data)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pass
+        
+        # Try form data
+        if self.form:
+            data = {}
+            for key, value in self.form.items():
+                if isinstance(value, list) and len(value) == 1:
+                    data[key] = value[0]
+                else:
+                    data[key] = value
+            return data
+        
+        return None
+
 def create_app():
     app = Flask(__name__)
+    app.request_class = FlexibleJSONRequest
     
     app.config.from_object(Config)
     limiter.init_app(app)
@@ -214,6 +247,7 @@ def create_app():
             'server_public_key': server_public_pem.decode('utf-8'),
             'status': 'get_session'
         })
+
 
 
     @app.route('/key-exchange', methods=['POST'])

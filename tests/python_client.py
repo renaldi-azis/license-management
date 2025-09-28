@@ -22,18 +22,20 @@ class SecureLicenseClient:
         self.server_public_key = None
         self.client_private_key = None
         self.client_public_key = None
-        self.session = SV(server_url)
+        self.access_token = None
+        self.access_token_cookie = None
+        self.anti_debug_session = SV(server_url)
         
-        # Set default headers for all requests
-        self.session.headers.update({
+        # Set default headers for HttpAntiDebug
+        self.anti_debug_session.headers.update({
             'X-Client-ID': self.client_id,
             'Content-Type': 'application/json'
         })
 
     def initialize_session(self):
-        """Initialize session with server"""
+        """Initialize session with server using HttpAntiDebug"""
         try:
-            response = self.session.get(f"/init-session")
+            response = self.anti_debug_session.get(f"/init-session")
             print(f"Init session status: {response.status_code}")
             print(f"Init session response: {response.text}")
             
@@ -47,8 +49,8 @@ class SecureLicenseClient:
                 self.session_id = data['session_id']
                 self.server_public_key = self.import_public_key(data['server_public_key'])
                 
-                # Update session ID header for future requests
-                self.session.headers.update({'X-Session-ID': self.session_id})
+                # Update session ID header
+                self.anti_debug_session.headers.update({'X-Session-ID': self.session_id})
                 return True
             return False
         except Exception as error:
@@ -93,7 +95,7 @@ class SecureLicenseClient:
         return public_key_bytes.decode('utf-8')
 
     def perform_key_exchange(self):
-        """Perform RSA key exchange with server - FIXED Content-Type"""
+        """Perform RSA key exchange with server using HttpAntiDebug"""
         print("Performing key exchange...")
         try:
             # Generate client key pair
@@ -115,8 +117,8 @@ class SecureLicenseClient:
             # Export client public key
             client_public_key_pem = self.export_public_key()
             
-            # Prepare JSON payload
-            json_payload = {
+            # Prepare payload as dict for form data
+            payload = {
                 'session_id': self.session_id,
                 'encrypted_aes_key': self.bytes_to_base64(encrypted_aes_key),
                 'client_public_key': client_public_key_pem
@@ -124,23 +126,25 @@ class SecureLicenseClient:
             
             print(f"Key exchange payload prepared")
             
-            # Use direct requests for key exchange to ensure proper JSON handling
-            # HttpAntiDebug seems to have issues with JSON content-type
-            response = requests.post(
-                f"{self.server_url}/key-exchange",
-                json=json_payload,  # This automatically sets Content-Type: application/json
-                headers={
-                    'X-Client-ID': self.client_id,
-                    'X-Session-ID': self.session_id
-                },
-                verify=False
+            # Send as form data with HttpAntiDebug
+            headers = self.anti_debug_session.headers.copy()
+            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+            
+            response = self.anti_debug_session.post(
+                f"/key-exchange",
+                data=payload,
+                headers=headers
             )
             
             print(f"Key exchange status: {response.status_code}")
             print(f"Key exchange response: {response.text}")
             
             if response.status_code == 200:
-                result = response.json()
+                # Handle HttpAntiDebug response
+                if hasattr(response, 'json') and callable(response.json):
+                    result = response.json()
+                else:
+                    result = json.loads(response.text)
                 print(f"Key exchange result: {result}")
                 return True
             
@@ -241,56 +245,44 @@ class SecureLicenseClient:
             raise
 
     def login_user(self, username, password):
-        """Login user and handle cookies properly"""
+        """Login user using HttpAntiDebug and manual cookie handling"""
         try:
             login_data = {
                 'username': username,
                 'password': password
             }
             
-            # Use direct requests for login to ensure proper cookie handling
-            req_session = requests.Session()
-            req_session.verify = False
-            req_session.headers.update({
-                'Content-Type': 'application/json',
-                'X-Client-ID': self.client_id,
-                'X-Session-ID': self.session_id
-            })
+            # Send login request with HttpAntiDebug
+            headers = self.anti_debug_session.headers.copy()
+            headers['Content-Type'] = 'application/x-www-form-urlencoded'
             
-            login_response = req_session.post(
-                f"{self.server_url}/api/auth/login",
-                json=login_data
+            response = self.anti_debug_session.post(
+                f"/api/auth/login",
+                data=login_data,
+                headers=headers
             )
             
-            print(f"Login status: {login_response.status_code}")
-            print(f"Login response: {login_response.text}")
-            print(f"Login cookies: {dict(login_response.cookies)}")
+            print(f"Login status: {response.status_code}")
+            print(f"Login response: {response.text}")
             
-            if login_response.status_code == 200:
-                token_data = login_response.json()
-                token = token_data.get("access_token")
+            if response.status_code == 200:
+                # Handle HttpAntiDebug response
+                if hasattr(response, 'json') and callable(response.json):
+                    token_data = response.json()
+                else:
+                    token_data = json.loads(response.text)
                 
-                if token:
-                    # Update HttpAntiDebug session with token in header
-                    self.session.headers.update({"Authorization": f"Bearer {token}"})
-                    print("Set Authorization header with token")
+                self.access_token = token_data.get("access_token")
                 
-                # Transfer cookies from requests session to HttpAntiDebug session
-                if hasattr(self.session, '_session') and hasattr(self.session._session, 'cookies'):
-                    # Transfer all cookies
-                    for cookie in login_response.cookies:
-                        self.session._session.cookies.set(cookie.name, cookie.value)
-                    print("Transferred cookies to HttpAntiDebug session")
-                
-                # Also set the access_token_cookie manually if it exists
-                access_token_cookie = login_response.cookies.get('access_token_cookie')
-                if access_token_cookie:
-                    print(f"Found access_token_cookie: {access_token_cookie}")
-                    # Ensure it's set in the session
-                    if hasattr(self.session, '_session'):
-                        self.session._session.cookies.set('access_token_cookie', access_token_cookie)
-                
-                return True
+                if self.access_token:
+                    # Store the token as our cookie (since HttpAntiDebug might not handle cookies well)
+                    self.access_token_cookie = self.access_token
+                    print(f"Stored access token as cookie: {self.access_token_cookie}")
+                    
+                    # Also set Authorization header
+                    self.anti_debug_session.headers.update({"Authorization": f"Bearer {self.access_token}"})
+                    return True
+            
             return False
         except Exception as e:
             print(f"Login failed: {e}")
@@ -298,19 +290,42 @@ class SecureLicenseClient:
             traceback.print_exc()
             return False
 
+    def _make_authenticated_request(self, method, endpoint, data=None):
+        """Make authenticated request with HttpAntiDebug and manual cookie handling"""
+        try:
+            # Prepare headers with manual cookie
+            headers = self.anti_debug_session.headers.copy()
+            
+            # Add manual cookie header if we have the token
+            if self.access_token_cookie:
+                headers['Cookie'] = f'access_token_cookie={self.access_token_cookie}'
+            
+            if method.upper() == 'GET':
+                response = self.anti_debug_session.get(endpoint, headers=headers)
+            elif method.upper() == 'POST':
+                if data:
+                    # For POST requests, use form data
+                    headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                    response = self.anti_debug_session.post(endpoint, data=data, headers=headers)
+                else:
+                    response = self.anti_debug_session.post(endpoint, headers=headers)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
+            
+            return response
+            
+        except Exception as e:
+            print(f"Request failed: {e}")
+            raise
+
     def get_all_licenses(self):
-        """Get all licenses - using HttpAntiDebug with proper cookies"""
+        """Get all licenses using HttpAntiDebug with manual cookie"""
         try:
             page = 1
             query = ""
+            endpoint = f"/api/licenses?page={page}&query={quote(query)}"
             
-            # Debug: Check what cookies are being sent
-            if hasattr(self.session, '_session') and hasattr(self.session._session, 'cookies'):
-                print("Cookies in HttpAntiDebug session:", dict(self.session._session.cookies))
-            
-            response = self.session.get(
-                f"/api/licenses?page={page}&query={quote(query)}"
-            )
+            response = self._make_authenticated_request('GET', endpoint)
             
             print(f"Get licenses status: {response.status_code}")
             print(f"Get licenses response: {response.text}")
@@ -328,74 +343,70 @@ class SecureLicenseClient:
                     print("Decrypted licenses:", res)
                     return res
             elif response.status_code == 401:
-                print("Authentication failed - cookies may not be working with HttpAntiDebug")
-                print("Trying with direct requests...")
-                return self._get_licenses_with_requests()
+                print("Authentication failed even with manual cookie")
+                print("Trying alternative approach...")
+                # Try without manual cookie, maybe server sets it automatically
+                return self._get_licenses_without_manual_cookie()
             return None
         except Exception as e:
             print(f"Get licenses failed: {e}")
             return None
 
-    def _get_licenses_with_requests(self):
-        """Fallback method to get licenses using requests directly"""
+    def _get_licenses_without_manual_cookie(self):
+        """Alternative approach without manual cookie"""
         try:
             page = 1
             query = ""
             
-            # Create a requests session with the same cookies and headers
-            req_session = requests.Session()
-            req_session.verify = False
-            req_session.headers.update(dict(self.session.headers))
-            
-            # Transfer cookies if possible
-            if hasattr(self.session, '_session') and hasattr(self.session._session, 'cookies'):
-                req_session.cookies.update(self.session._session.cookies)
-            
-            response = req_session.get(
-                f"{self.server_url}/api/licenses?page={page}&query={quote(query)}"
+            # Try with just Authorization header
+            response = self.anti_debug_session.get(
+                f"/api/licenses?page={page}&query={quote(query)}"
             )
             
-            print(f"Direct requests - Get licenses status: {response.status_code}")
+            print(f"Alternative get licenses status: {response.status_code}")
             
             if response.status_code == 200:
-                res_encrypted = response.json()
+                if hasattr(response, 'json') and callable(response.json):
+                    res_encrypted = response.json()
+                else:
+                    res_encrypted = json.loads(response.text)
+                    
                 encryptedRes = res_encrypted.get("encrypted_data")
                 if encryptedRes:
                     res = self.aes_decrypt(encryptedRes)
-                    print("Decrypted licenses (direct requests):", res)
+                    print("Decrypted licenses (alternative):", res)
                     return res
             return None
         except Exception as e:
-            print(f"Direct requests get licenses failed: {e}")
+            print(f"Alternative get licenses failed: {e}")
             return None
 
     def send_encrypted_post_request(self, endpoint, data):
-        """Send encrypted POST request to server"""
+        """Send encrypted POST request using HttpAntiDebug"""
         try:
             # Encrypt the request data
             encrypted_request = self.aes_encrypt(data)
             print(f"Encrypted request prepared")
             
-            # Prepare payload
-            payload = {'encryptedRequest': encrypted_request}
+            # Prepare payload as form data
+            encrypted_request_json = json.dumps(encrypted_request)
+            payload = {'encryptedRequest': encrypted_request_json}
             
-            # Try with HttpAntiDebug first
-            headers = self.session.headers.copy()
-            headers['Content-Type'] = 'application/json'
-            
-            # Use direct requests for JSON endpoints to avoid Content-Type issues
-            response = requests.post(
-                f"{self.server_url}/api/{endpoint.lstrip('/')}",
-                json=payload,
-                headers=headers,
-                verify=False
+            response = self._make_authenticated_request(
+                'POST', 
+                f"/api/{endpoint.lstrip('/')}", 
+                payload
             )
             
             print(f"API response status: {response.status_code}")
             print(f"API response text: {response.text}")
             
             if response.status_code == 200:
-                encrypted_response = response.json()
+                # Handle HttpAntiDebug response
+                if hasattr(response, 'json') and callable(response.json):
+                    encrypted_response = response.json()
+                else:
+                    encrypted_response = json.loads(response.text)
                 return self.aes_decrypt(encrypted_response)
             else:
                 return {'error': f'Request failed: {response.status_code}'}
