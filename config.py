@@ -19,5 +19,6 @@ class Config:
     JWT_TOKEN_LOCATION = ['cookies']
     JWT_ACCESS_COOKIE_NAME = 'access_token_cookie'
     JWT_COOKIE_CSRF_PROTECT = False  # For testing; enable for production
+    JWT_COOKIE_SECURE = False
     RECAPTCHA_SITE_KEY = "hobit-321"
     RECAPTCHA_SECRET_KEY = "hobit-321"

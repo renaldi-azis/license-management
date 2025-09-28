@@ -34,7 +34,10 @@ def create_app():
     
     # Initialize extensions (in correct order)
     jwt = JWTManager(app)
-    
+    app.config['JWT_COOKIE_CSRF_PROTECT'] = False
+    app.config['JWT_COOKIE_SECURE'] = False
+
+        
     # Initialize database
     with app.app_context():
         init_db()
