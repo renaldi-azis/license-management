@@ -56,7 +56,6 @@ class UniversalJSONRequest(Request):
         raw_data = self.get_data(as_text=True)
         if raw_data and raw_data.strip():
             return json.loads(raw_data)
-        print("_raw_json", raw_data)
         return None
     
     def _parse_form_as_json(self):
@@ -81,8 +80,6 @@ class UniversalJSONRequest(Request):
                         result[key] = json.loads(result[key])
                     except json.JSONDecodeError:
                         pass
-        
-        print("_parse_form", result)
         return result["json_data"] if result["json_data"] else None
     
     def _parse_query_as_json(self):
@@ -94,8 +91,6 @@ class UniversalJSONRequest(Request):
         for key in list(result.keys()):
             if isinstance(result[key], list) and len(result[key]) == 1:
                 result[key] = result[key][0]
-
-        print("parse_query", result)
         return result
     
 def create_app():
@@ -262,24 +257,17 @@ def create_app():
         if request.method in ['POST']:
             try:
                 session_id = request.headers.get('X-Session-ID')
-                print(session_id)
                 if session_id:
                     current_session = session_manager.get_session(session_id)
                     if current_session and 'aes_key' in current_session:
                         encrypted_payload = request.get_json()
-                        print(encrypted_payload)
                         if 'encryptedRequest' in encrypted_payload:
-                            print('encryptedRequest')
-                            
                             encrypted_data = encrypted_payload['encryptedRequest']
-            
-                            print('encrypt_data', encrypted_data)
                             # Decrypt the data
                             decrypted_json = crypto_manager.aes_decrypt(
                                 current_session['aes_key'],
                                 json.loads(encrypted_data)
                             )
-                            print('decrypted_json', decrypted_json)
                             # Replace request.data with decrypted data
                             request.data = json.loads(decrypted_json)
             except Exception as e:

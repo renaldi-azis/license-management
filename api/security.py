@@ -103,10 +103,7 @@ class CryptoManager:
     @staticmethod
     def aes_decrypt(key: bytes, encrypted_data: dict) -> str:
         """Decrypt AES-256-CBC encrypted data"""
-        print('encrypte', encrypted_data)
         print(type(encrypted_data)) 
-        
-        print('en-iv', encrypted_data['iv'])
         iv = base64.b64decode(encrypted_data['iv'])
         data = base64.b64decode(encrypted_data['data'])
         cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
