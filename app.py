@@ -21,67 +21,72 @@ from api.security import session_manager, crypto_manager
 class UniversalJSONRequest(Request):
     def get_json(self, force=False, silent=False, cache=True):
         """
-        Override get_json to handle ANY content type
+        Override get_json to handle ANY content type and always return unwrapped data
         """
         # First try parent method (standard JSON parsing)
-        try:
-            result = super().get_json(force=force, silent=silent, cache=cache)
-            if result is not None:
-                return result
-        except:
-            pass
+
+        result = super().get_json(force=force, silent=silent, cache=cache)
+        if result is not None:
+            return result
+            
         
         # Try alternative parsing methods
-        parsers = [
-            self._parse_raw_json,
-            self._parse_form_as_json,
-            self._parse_query_as_json
-        ]
+        result = self._parse_any_format()
         
-        for parser in parsers:
-            try:
-                result = parser()
-                if result is not None:
-                    return result
-            except:
-                continue
+        if result is not None:
+            
+            return result
         
         # If nothing worked and not silent, raise error
         if not silent:
             raise ValueError("Could not parse JSON from request")
         return None
     
-    def _parse_raw_json(self):
-        """Parse raw request data as JSON"""
+    def _parse_any_format(self):
+        """
+        Parse data from ANY format and always return unwrapped JSON
+        """
+        # 1. Try raw JSON data
         raw_data = self.get_data(as_text=True)
         if raw_data and raw_data.strip():
-            return json.loads(raw_data)
+                data = json.loads(raw_data)                
+                return data
+            
+        
+        # 2. Try form data (HttpAntiDebug usually sends this)
+        if self.form:
+            form_data = {}
+            for key, value in self.form.items():
+                if isinstance(value, list) and len(value) == 1:
+                    form_data[key] = value[0]
+                else:
+                    form_data[key] = value
+            # Check if form data contains wrapped JSON
+            wrapped_data = self._extract_wrapped_json(form_data)
+            if wrapped_data is not None:
+                return wrapped_data
+            
+            # If no wrapper found, return form data as-is
+            
+            return form_data
+        
         return None
     
-    def _parse_form_as_json(self):
-        """Parse form data as JSON"""
-        if not self.form:
-            return None
+    def _extract_wrapped_json(self, form_data):
+        """
+        Extract JSON from common wrapper fields
+        Returns the unwrapped data or None if no wrapper found
+        """
+        wrapper_fields = ['json_data', 'data', 'payload', 'request', 'body', 'encryptedRequest']
         
-        result = {}
-        for key, value in self.form.items():
-            if isinstance(value, list) and len(value) == 1:
-                result[key] = value[0]
-            else:
-                result[key] = value
+        for wrapper_field in wrapper_fields:
+            if wrapper_field in form_data:
+                json_str = form_data[wrapper_field]
+                if isinstance(json_str, str):
+                    wrapped_data = json.loads(json_str)
+                    return wrapped_data
         
-        # Parse JSON strings in form fields
-        for key in list(result.keys()):
-            if isinstance(result[key], str):
-                stripped = result[key].strip()
-                if (stripped.startswith('{') and stripped.endswith('}')) or \
-                   (stripped.startswith('[') and stripped.endswith(']')):
-                    try:
-                        result[key] = json.loads(result[key])
-                    except json.JSONDecodeError:
-                        pass
-        
-        return result if result else None
+        return None
     
     def _parse_query_as_json(self):
         """Parse query parameters as JSON"""
