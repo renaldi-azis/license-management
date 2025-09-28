@@ -267,13 +267,12 @@ def create_app():
                     current_session = session_manager.get_session(session_id)
                     if current_session and 'aes_key' in current_session:
                         encrypted_payload = request.get_json()
-                        print(eval(encrypted_payload))
                         if 'encryptedRequest' in encrypted_payload:
                             encrypted_data = encrypted_payload['encryptedRequest']
                             # Decrypt the data
                             decrypted_json = crypto_manager.aes_decrypt(
                                 current_session['aes_key'],
-                                eval(encrypted_data)
+                                encrypted_data
                             )
                             # Replace request.data with decrypted data
                             request.data = json.loads(decrypted_json)
