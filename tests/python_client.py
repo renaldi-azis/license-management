@@ -115,42 +115,29 @@ class SecureLicenseClient:
             )
             
             # Export client public key
-            client_public_key_pem = self.export_public_key()
-            
-            # Prepare JSON payload as string
-            json_payload = json.dumps({
-                'session_id': self.session_id,
-                'encrypted_aes_key': self.bytes_to_base64(encrypted_aes_key),
-                'client_public_key': client_public_key_pem
-            })
+            client_public_key_pem = self.export_public_key()            
             
             print(f"Key exchange payload prepared")
             
              # METHOD 1: Try to send as raw JSON with proper Content-Type
             headers = {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
                 'X-Client-ID': self.client_id,
                 'X-Session-ID': self.session_id
             }
-            
-            # HttpAntiDebug might not handle JSON well, so let's try different approaches
-            try:
-                # First try: Send as JSON data
-                response = self.anti_debug_session.post(
-                    f"/key-exchange",
-                    data=json_payload,  # Send as raw JSON string
-                    headers=headers
-                )
-            except Exception as e:
-                print(f"JSON approach failed: {e}, trying form data approach...")
-                # Fallback to form data but with JSON string
-                headers['Content-Type'] = 'application/x-www-form-urlencoded'
-                form_payload = {'json_data': json_payload}
-                response = self.anti_debug_session.post(
-                    f"/key-exchange",
-                    data=form_payload,
-                    headers=headers
-                )
+
+            # Prepare JSON payload as string
+            json_payload = json.dumps({
+                'session_id': self.session_id,
+                'encrypted_aes_key': self.bytes_to_base64(encrypted_aes_key),
+                'client_public_key': client_public_key_pem
+            })            
+            form_payload = {'json_data': json_payload}
+            response = self.anti_debug_session.post(
+                f"/key-exchange",
+                data=form_payload,
+                headers=headers
+            )
             
             print(f"Key exchange status: {response.status_code}")
             print(f"Key exchange response: {response.text}")
@@ -263,18 +250,19 @@ class SecureLicenseClient:
     def login_user(self, username, password):
         """Login user using HttpAntiDebug and manual cookie handling"""
         try:
-            login_data = {
+            # Prepare JSON payload as string
+            json_payload = json.dumps({
                 'username': username,
                 'password': password
-            }
+            })
             
             # Send login request with HttpAntiDebug
             headers = self.anti_debug_session.headers.copy()
             headers['Content-Type'] = 'application/x-www-form-urlencoded'
-            
+            form_payload = {'json_data': json_payload}
             response = self.anti_debug_session.post(
                 f"/api/auth/login",
-                data=login_data,
+                data=form_payload,
                 headers=headers
             )
             
@@ -322,7 +310,9 @@ class SecureLicenseClient:
                 if data:
                     # For POST requests, use form data
                     headers['Content-Type'] = 'application/x-www-form-urlencoded'
-                    response = self.anti_debug_session.post(endpoint, data=data, headers=headers)
+                    json_payload = json.dumps(data)
+                    form_data = {"json_data" : json_payload}
+                    response = self.anti_debug_session.post(endpoint, data=form_data, headers=headers)
                 else:
                     response = self.anti_debug_session.post(endpoint, headers=headers)
             else:

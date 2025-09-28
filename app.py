@@ -259,7 +259,7 @@ def create_app():
         """Decrypt incoming JSON requests if session and AES key are established"""
         if request.endpoint in ['/', '/api/auth/login', '/api/auth/register', 'auth.login', 'auth.register']:
             return  # Skip decryption for these endpoints
-        if request.method in ['POST'] and request.is_json:
+        if request.method in ['POST']:
             try:
                 session_id = request.headers.get('X-Session-ID')
                 if session_id:

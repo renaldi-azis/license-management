@@ -192,7 +192,8 @@ def automate_license_route():
         return jsonify({'error': 'Admin access required'}), 403
     
     data = request.data
-
+    print(data)
+    
     if contains_xss(data.get('user_id', '')) or contains_xss(data.get('machine_code', '')) or contains_xss(data.get('product_name', '')):
         return jsonify({'error': 'Invalid input detected'}), 400
     
