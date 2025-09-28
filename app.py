@@ -279,6 +279,7 @@ def create_app():
                                 current_session['aes_key'],
                                 encrypted_data
                             )
+                            print('decrypted_json', decrypted_json)
                             # Replace request.data with decrypted data
                             request.data = json.loads(decrypted_json)
             except Exception as e:
