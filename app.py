@@ -277,7 +277,7 @@ def create_app():
                             # Decrypt the data
                             decrypted_json = crypto_manager.aes_decrypt(
                                 current_session['aes_key'],
-                                encrypted_data
+                                json.loads(encrypted_data)
                             )
                             print('decrypted_json', decrypted_json)
                             # Replace request.data with decrypted data
