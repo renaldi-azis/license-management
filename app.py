@@ -262,6 +262,7 @@ def create_app():
         if request.method in ['POST']:
             try:
                 session_id = request.headers.get('X-Session-ID')
+                print(session_id)
                 if session_id:
                     current_session = session_manager.get_session(session_id)
                     if current_session and 'aes_key' in current_session:
