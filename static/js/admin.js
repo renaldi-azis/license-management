@@ -230,7 +230,8 @@ async function loadDashboard() {
 
         client = new SecureLicenseClient()
         await client.initializeSession()
-        await client.performKeyExchange()
+        if(await client.performKeyExchange()) return;
+        
 
         // Load stats
         if(window.location.pathname === '/admin') {
@@ -309,7 +310,7 @@ async function loadProducts(page = 1, query = '') {
         tbody.innerHTML = products.map(product => `
             <tr class="fade-in">
                 <td><strong>${product.name}</strong></td>
-                <td>${product.description || ''}</td>
+                <td>${product.description.slice(0, 50) + '...' || ''}</td>
                 <td>
                     <span class="badge bg-${(product.active_licenses || 0) == 0? "danger" : "success" }">${product.active_licenses || 0} / ${product.total_licenses || 0}</span>
                     
