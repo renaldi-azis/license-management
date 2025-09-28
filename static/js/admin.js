@@ -131,7 +131,7 @@ class SecureLicenseClient {
                 })
             });
 
-            return true;
+            return response.ok;
         } catch (error) {
             console.error('Key exchange failed:', error);
             return false;
@@ -230,8 +230,7 @@ async function loadDashboard() {
 
         client = new SecureLicenseClient()
         await client.initializeSession()
-        if(await client.performKeyExchange()) return;
-        
+        if(await client.performKeyExchange() == false) return;        
 
         // Load stats
         if(window.location.pathname === '/admin') {
