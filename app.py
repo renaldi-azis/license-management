@@ -4,6 +4,7 @@ import json
 from flask import Flask, redirect, request, jsonify, render_template, url_for
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 
 from config import Config
 from api import auth, licenses, products , validation, settings
@@ -33,11 +34,22 @@ def create_app():
         return {"error": "Internal server error"}, 500
     
     # Initialize extensions (in correct order)
+    app.config['JWT_SECRET_KEY'] = 'your-secret-key'
+    app.config['JWT_TOKEN_LOCATION'] = ['cookies', 'headers']  # Accept both
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = datetime.timedelta(hours=1)
+    app.config['JWT_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+    app.config['JWT_COOKIE_CSRF_PROTECT'] = False  # Disable for API, enable for web
+    app.config['JWT_COOKIE_SAMESITE'] = 'None'  # Required for cross-origin
     jwt = JWTManager(app)
-    app.config['JWT_COOKIE_CSRF_PROTECT'] = False
-    app.config['JWT_COOKIE_SECURE'] = False
+    
+    
+    CORS(app, 
+     supports_credentials=True,
+     origins=["http://localhost:3000", "https://richtoolsquantri.online"],  # Add your domains
+     allow_headers=["Content-Type", "Authorization", "X-Client-ID", "X-Session-ID"],
+     methods=["GET", "POST", "PUT", "DELETE"])
 
-        
+
     # Initialize database
     with app.app_context():
         init_db()
