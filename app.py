@@ -251,10 +251,15 @@ def create_app():
                         encrypted_payload = request.get_json()
                         if 'encryptedRequest' in encrypted_payload:
                             encrypted_data = encrypted_payload['encryptedRequest']
+                            print('encrypted_data', encrypted_data)
+                            input_data = encrypted_data
+                            if type(encrypted_data) == 'str':
+                                input_data = json.loads(encrypted_data)
+                            print('input_data',input_data)
                             # Decrypt the data
                             decrypted_json = crypto_manager.aes_decrypt(
                                 current_session['aes_key'],
-                                json.loads(encrypted_data)
+                                input_data
                             )
                             # Replace request.data with decrypted data
                             request.data = json.loads(decrypted_json)
