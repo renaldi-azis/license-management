@@ -23,7 +23,7 @@ class SecureLicenseClient {
         this.clientKeyPair = null;
     }
 
-    async initializeSession() {
+   initializeSession  = async () => {
         try {
             const response = await fetch(`/init-session`, {
                 method: 'GET',
@@ -47,7 +47,7 @@ class SecureLicenseClient {
     }
 
     // Utility method: Convert base64 string to ArrayBuffer
-    base64ToArrayBuffer(base64) {
+    base64ToArrayBuffer = (base64) =>{
         const binaryString = atob(base64);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
@@ -57,7 +57,7 @@ class SecureLicenseClient {
     }
 
     // Utility method: Convert ArrayBuffer to base64 string
-    arrayBufferToBase64(buffer) {
+    arrayBufferToBase64 = (buffer) => {
         const bytes = new Uint8Array(buffer);
         let binary = '';
         for (let i = 0; i < bytes.byteLength; i++) {
@@ -66,7 +66,7 @@ class SecureLicenseClient {
         return btoa(binary);
     }
 
-    async importPublicKey(pem) {
+    importPublicKey = async (pem) => {
         const pemHeader = '-----BEGIN PUBLIC KEY-----';
         const pemFooter = '-----END PUBLIC KEY-----';
         const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '');
@@ -84,7 +84,7 @@ class SecureLicenseClient {
         );
     }
 
-    async generateKeyPair() {
+    generateKeyPair = async () => {
         this.clientKeyPair = await crypto.subtle.generateKey(
             {
                 name: 'RSA-OAEP',
@@ -97,13 +97,13 @@ class SecureLicenseClient {
         );
     }
 
-    async exportPublicKey() {
+    exportPublicKey = async ()=> {
         const exported = await crypto.subtle.exportKey('spki', this.clientKeyPair.publicKey);
         const exportedAsBase64 = btoa(String.fromCharCode(...new Uint8Array(exported)));
         return `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
     }
 
-    async performKeyExchange() {
+    performKeyExchange = async () => {
         try {
             await this.generateKeyPair();
             this.aesKey = await crypto.subtle.generateKey(
@@ -138,7 +138,7 @@ class SecureLicenseClient {
         }
     }
 
-    async aesEncrypt(data) {
+    aesEncrypt = async (data) => {
         const iv = crypto.getRandomValues(new Uint8Array(16));
         const dataStr = JSON.stringify(data);
         const encoder = new TextEncoder();
@@ -164,7 +164,7 @@ class SecureLicenseClient {
     }
 
    
-    async aesDecrypt(encryptedData) {
+    aesDecrypt = async (encryptedData) => {
         try {            
             // If it's a string, it's probably base64 encoded JSON
             if (typeof encryptedData === 'string') {
@@ -196,7 +196,7 @@ class SecureLicenseClient {
         }
     }
 
-    async sendEncryptedPostRequest(endpoint, data) {
+    sendEncryptedPostRequest = async (endpoint, data) => {
         try {
             const encryptedRequest = await this.aesEncrypt(data);
             const fullUrl = `${window.location.origin}/api${endpoint}`;
