@@ -245,7 +245,7 @@ def create_app():
                             encrypted_data = encrypted_payload['encryptedRequest']
                             print('encrypted_data', encrypted_data)
                             input_data = encrypted_data
-                            if type(encrypted_data) == 'str':
+                            if type(encrypted_data) == str:
                                 input_data = json.loads(encrypted_data)
                             print('input_data',input_data)
                             # Decrypt the data
