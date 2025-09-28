@@ -5,6 +5,7 @@ from flask import Flask, redirect, request, jsonify, render_template, url_for
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from flask_limiter.util import get_remote_address
 from flask_cors import CORS
+from flask import Request
 
 from config import Config
 from api import auth, licenses, products , validation, settings
