@@ -117,24 +117,40 @@ class SecureLicenseClient:
             # Export client public key
             client_public_key_pem = self.export_public_key()
             
-            # Prepare payload as dict for form data
-            payload = {
+            # Prepare JSON payload as string
+            json_payload = json.dumps({
                 'session_id': self.session_id,
                 'encrypted_aes_key': self.bytes_to_base64(encrypted_aes_key),
                 'client_public_key': client_public_key_pem
-            }
+            })
             
             print(f"Key exchange payload prepared")
             
-            # Send as form data with HttpAntiDebug
-            headers = self.anti_debug_session.headers.copy()
-            headers['Content-Type'] = 'application/x-www-form-urlencoded'
+             # METHOD 1: Try to send as raw JSON with proper Content-Type
+            headers = {
+                'Content-Type': 'application/json',
+                'X-Client-ID': self.client_id,
+                'X-Session-ID': self.session_id
+            }
             
-            response = self.anti_debug_session.post(
-                f"/key-exchange",
-                data=payload,
-                headers=headers
-            )
+            # HttpAntiDebug might not handle JSON well, so let's try different approaches
+            try:
+                # First try: Send as JSON data
+                response = self.anti_debug_session.post(
+                    f"/key-exchange",
+                    data=json_payload,  # Send as raw JSON string
+                    headers=headers
+                )
+            except Exception as e:
+                print(f"JSON approach failed: {e}, trying form data approach...")
+                # Fallback to form data but with JSON string
+                headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                form_payload = {'json_data': json_payload}
+                response = self.anti_debug_session.post(
+                    f"/key-exchange",
+                    data=form_payload,
+                    headers=headers
+                )
             
             print(f"Key exchange status: {response.status_code}")
             print(f"Key exchange response: {response.text}")

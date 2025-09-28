@@ -18,41 +18,85 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from api.security import session_manager, crypto_manager
 
-class FlexibleJSONRequest(Request):
+class UniversalJSONRequest(Request):
     def get_json(self, force=False, silent=False, cache=True):
         """
-        Override get_json to be more flexible about Content-Type
+        Override get_json to handle ANY content type
         """
-        # First try the parent method (standard JSON parsing)
-        result = super().get_json(force=force, silent=silent, cache=cache)
-        if result is not None:
-            return result
-        
-        # If standard method failed, try our flexible parsing
+        # First try parent method (standard JSON parsing)
         try:
-            # Try raw data
-            if self.get_data():
-                data = self.get_data(as_text=True)
-                if data.strip():
-                    return json.loads(data)
-        except (json.JSONDecodeError, UnicodeDecodeError):
+            result = super().get_json(force=force, silent=silent, cache=cache)
+            if result is not None:
+                return result
+        except:
             pass
         
-        # Try form data
-        if self.form:
-            data = {}
-            for key, value in self.form.items():
-                if isinstance(value, list) and len(value) == 1:
-                    data[key] = value[0]
-                else:
-                    data[key] = value
-            return data
+        # Try alternative parsing methods
+        parsers = [
+            self._parse_raw_json,
+            self._parse_form_as_json,
+            self._parse_query_as_json
+        ]
         
+        for parser in parsers:
+            try:
+                result = parser()
+                if result is not None:
+                    return result
+            except:
+                continue
+        
+        # If nothing worked and not silent, raise error
+        if not silent:
+            raise ValueError("Could not parse JSON from request")
         return None
-
+    
+    def _parse_raw_json(self):
+        """Parse raw request data as JSON"""
+        raw_data = self.get_data(as_text=True)
+        if raw_data and raw_data.strip():
+            return json.loads(raw_data)
+        return None
+    
+    def _parse_form_as_json(self):
+        """Parse form data as JSON"""
+        if not self.form:
+            return None
+        
+        result = {}
+        for key, value in self.form.items():
+            if isinstance(value, list) and len(value) == 1:
+                result[key] = value[0]
+            else:
+                result[key] = value
+        
+        # Parse JSON strings in form fields
+        for key in list(result.keys()):
+            if isinstance(result[key], str):
+                stripped = result[key].strip()
+                if (stripped.startswith('{') and stripped.endswith('}')) or \
+                   (stripped.startswith('[') and stripped.endswith(']')):
+                    try:
+                        result[key] = json.loads(result[key])
+                    except json.JSONDecodeError:
+                        pass
+        
+        return result if result else None
+    
+    def _parse_query_as_json(self):
+        """Parse query parameters as JSON"""
+        if not self.args:
+            return None
+        
+        result = dict(self.args)
+        for key in list(result.keys()):
+            if isinstance(result[key], list) and len(result[key]) == 1:
+                result[key] = result[key][0]
+        return result
+    
 def create_app():
     app = Flask(__name__)
-    app.request_class = FlexibleJSONRequest
+    app.request_class = UniversalJSONRequest
     
     app.config.from_object(Config)
     limiter.init_app(app)
