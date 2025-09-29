@@ -330,7 +330,6 @@ def update_credit_number_route():
     
     if not isinstance(used_credits, int) or used_credits < 0:
         used_credits = 0  # set to 0 if invalid
-    print(used_credits)
     if contains_xss(license_key):
         return jsonify({'error': 'Invalid input detected'}), 400
     
@@ -342,7 +341,6 @@ def update_credit_number_route():
         conn.close()
         return jsonify({'error': 'License not found'}), 404
     new_credit_number = int(license_record['credit_number']) - used_credits
-    print(new_credit_number)
     if(new_credit_number < 0):
         new_credit_number = 0
     cursor.execute("""

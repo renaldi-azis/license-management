@@ -490,8 +490,8 @@ async function loadLicenses(page = 1 , query = '') {
                     <button class="btn btn-sm btn-outline-info" onclick="showLicenseDetail('${license.key}')">
                         Details
                     </button>
-                    <button class="btn btn-sm btn-outline-info" onclick="editLicenseDetail('${license.key}')">
-                        &nbsp;&nbsp;Edit&nbsp;&nbsp;
+                    <button class="btn btn-sm btn-outline-primary" onclick="editLicenseDetail('${license.key}')">
+                        &nbsp;Edit&nbsp;
                     </button>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeLicense('${license.key}')">
                         Delete
@@ -1215,6 +1215,10 @@ function formatToDateTimeLocal(date) {
     const minutes = String(date.getMinutes()).padStart(2, '0');
     
     return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function utcToLocalString(utcString) {
+    return new Date(utcString).toLocaleString();
 }
 
 // Clean up modals on page unload
