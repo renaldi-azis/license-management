@@ -14,7 +14,7 @@ from services.license_service import (
 )
 
 from utils.hash_utils import hash_machine_code
-from utils.validators import validate_json, validate_license_key
+from utils.validators import validate_license_key
 
 bp = Blueprint('licenses', __name__)
 

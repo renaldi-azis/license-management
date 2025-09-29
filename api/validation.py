@@ -11,7 +11,6 @@ bp = Blueprint('validation', __name__)
 
 @bp.route('/', methods=['POST'])
 @rate_limited(limit='30 per minute')  # Limit validation requests
-@validate_license_key
 def validate_license_route():
     """Validate license with safety checks."""
     try:
