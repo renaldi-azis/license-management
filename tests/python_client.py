@@ -323,9 +323,6 @@ class SecureLicenseClient:
             return response
             
         except Exception as e:
-            print(e)
-            print(response)
-            print(f"Request failed: {e}")
             raise
 
     def get_all_licenses(self):
@@ -396,7 +393,7 @@ class SecureLicenseClient:
         try:
             # Encrypt the request data
             encrypted_request = self.aes_encrypt(data)
-            print(f"Encrypted request prepared")
+            # print(f"Encrypted request prepared")
             
             # Prepare payload as form data
             encrypted_request_json = json.dumps(encrypted_request)
@@ -408,24 +405,22 @@ class SecureLicenseClient:
                 payload
             )
             
-            print(f"API response status: {response.status_code}")
-            print(f"API response text: {response.text}")
+            # print(f"API response status: {response.status_code}")
+            # print(f"API response text: {response.text}")
             
             if response.status_code == 200:
                 # Handle HttpAntiDebug response
                 encrypted_response = None
                 if hasattr(response, 'json') and callable(response.json):
                     encrypted_response = response.json()
-                    print('json', encrypted_response)
                 else:
                     encrypted_response = json.loads(response.text)
-                    print('loads', encrypted_response)
                 encryptedRes = encrypted_response.get("encrypted_data")
                 if encryptedRes:
                     res = self.aes_decrypt(encryptedRes)
                 return res
             else:
-                return {'error': f'Request failed: {response.status_code}'}
+                return json.loads(response.text)
                 
         except Exception as error:
             return {'error': f'Request failed: {str(error)}'}
@@ -495,7 +490,7 @@ if __name__ == "__main__":
                     {"user_id": "user2", "product_name": "NonExistentProduct", "machine_code": "MACHINE456"}, # Non-existent product
                     {"user_id": "user1", "product_name": "ProductA", "machine_code": "MACHINE123"}, # Duplicate active license, this includes same values with first data so => fails
                     {"user_id": "user3", "product_name": "ProductA", "machine_code": "<img src=x onerror=alert(1)>"},
-                    {"user_id":"user4", "product_name":"ProductA","machine_code":"MACHINE1234"}] # XSS => this also includes XSS
+                    {"user_id":"user4", "product_name":"ProductA","machine_code":"MACHINE123"}] # XSS => this also includes XSS
                 
                 for td in test_data:
                     print(f"\nTesting with user_id: {td['user_id']}, product_name: {td['product_name']}, machine_code: {td['machine_code']}")

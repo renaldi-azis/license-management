@@ -214,7 +214,7 @@ def automate_license_route():
     cursor = conn.cursor()
     cursor.execute("""
         SELECT COUNT(*) AS count FROM licenses
-        WHERE machine_code = ?)
+        WHERE machine_code = ?
     """, (data['machine_code']))
     result = cursor.fetchone()
     conn.close()
