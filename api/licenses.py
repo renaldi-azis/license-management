@@ -71,6 +71,63 @@ def get_license_route(license_key):
         return jsonify(result)
     return jsonify(result), 404
 
+@bp.route('/<license_key>', methods=['PUT'])
+@rate_limited(limit='10 per minute')  # Limit license updates
+@jwt_required()
+@validate_license_key
+def update_license_route(license_key):
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.get_json()
+    if 'user_id' in data and contains_xss(data['user_id']):
+        return jsonify({'error': 'Invalid input detected'}), 400
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM licenses WHERE key = ?", (license_key,))
+    license_record = cursor.fetchone()
+    if not license_record:
+        conn.close()
+        return jsonify({'error': 'License not found'}), 404
+    
+    # Prepare update fields
+    update_fields = []
+    update_values = []
+    
+    if 'user_id' in data:
+        update_fields.append("user_id = ?")
+        update_values.append(data['user_id'])
+    
+    # change credit_number to int and validate
+    data['credit_number'] = int(data['credit_number']) if 'credit_number' in data and isinstance(data['credit_number'], (int, str)) and str(data['credit_number']).isdigit() else 0
+
+    if 'credit_number' in data:
+        if not isinstance(data['credit_number'], int) or data['credit_number'] < 0:
+            data['credit_number'] = 0  # set to 0 if invalid
+        update_fields.append("credit_number = ?")
+        update_values.append(data['credit_number'])
+    
+    if 'expires_at' in data:
+        if data['expires_at'] is None or data['expires_at'] == '':
+            update_fields.append("expires_at = NULL")
+        else:
+            update_fields.append("expires_at = ?")
+            update_values.append(data['expires_at'])
+
+    if not update_fields:
+        conn.close()
+        return jsonify({'error': 'No valid fields to update'}), 400
+    
+    update_values.append(license_key)
+    sql_query = f"UPDATE licenses SET {', '.join(update_fields)} WHERE key = ?"
+    cursor.execute(sql_query, tuple(update_values))
+    conn.commit()
+    conn.close()
+    
+    updated_license = get_license_detail(license_key)
+    return jsonify({'success': True, 'data': updated_license})
+
 @bp.route('', methods=['GET'])
 @rate_limited(limit='30 per minute')  # Limit license listing
 @jwt_required()
@@ -216,7 +273,6 @@ def automate_license_route():
         WHERE status = 'active' AND user_id = ? AND machine_code = ? AND product_id = ?
     """, (data['user_id'], hash_machine_code(data['machine_code']), product_id))
     result = cursor.fetchone()
-    print(result)
     conn.close()
     if result['count'] > 0:
         return jsonify({'error': 'Active license already exists for this user and machine code'}), 400
@@ -267,13 +323,13 @@ def update_credit_number_route():
     
     data = request.data
     license_key = data.get('license_key')
-    new_credit_number = data.get('new_credit_number')
-    print(license_key, new_credit_number)
-    if not license_key or not new_credit_number:
-        return jsonify({'error': 'license_key and new_credit_number are required'}), 400
+    used_credits = data.get('used_credits')
     
-    if not isinstance(new_credit_number, int) or new_credit_number < 0:
-        new_credit_number = 0  # set to 0 if invalid
+    if not license_key or not used_credits:
+        return jsonify({'error': 'license_key and used_credits are required'}), 400
+    
+    if not isinstance(used_credits, int) or used_credits < 0:
+        used_credits = 0  # set to 0 if invalid
     
     if contains_xss(license_key):
         return jsonify({'error': 'Invalid input detected'}), 400
@@ -285,7 +341,9 @@ def update_credit_number_route():
     if not license_record:
         conn.close()
         return jsonify({'error': 'License not found'}), 404
-    
+    new_credit_number = license_record['credit_number'] - used_credits
+    if(new_credit_number < 0):
+        new_credit_number = 0
     cursor.execute("""
         UPDATE licenses
         SET credit_number = ?

@@ -459,13 +459,13 @@ class SecureLicenseClient:
         print("License validation response:", resp)
         return resp
 
-    def update_credit_number(self, license_key, new_credits):
+    def update_credit_number(self, license_key, used_credits):
         """Update credit number for a license"""
         data = {
             "license_key": license_key,
-            "new_credit_number": new_credits
+            "used_credits": used_credits
         }
-        response = self.send_encrypted_post_request('/licenses/update-credits', data)
+        response = self.send_encrypted_post_request('/licenses/update/credit-number', data)
         print(response)
         return response
 
@@ -512,7 +512,7 @@ if __name__ == "__main__":
                 #     result = client.check_license_validate(td['license_key'], td['product_name'], td['machine_code'])
                 #     print(f"Validation Result: {result}")
 
-                client.update_credit_number("9vpNiWsU8nsT9CnE", 50)
+                client.update_credit_number("9xfJDaHxBDG1I0eo", 50)
 
             else:
                 print("Login failed")

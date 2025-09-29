@@ -490,6 +490,9 @@ async function loadLicenses(page = 1 , query = '') {
                     <button class="btn btn-sm btn-outline-info" onclick="showLicenseDetail('${license.key}')">
                         Details
                     </button>
+                    <button class="btn btn-sm btn-outline-info" onclick="editLicenseDetail('${license.key}')">
+                        &nbsp;Edit&nbsp;
+                    </button>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeLicense('${license.key}')">
                         Delete
                     </button>
@@ -1147,6 +1150,71 @@ async function showLicenseDetail(licenseKey) {
     } catch (err) {
         modalBody.innerHTML = `<div class="alert alert-danger">Failed to load license details.</div>`;
     }
+}
+
+async function editLicenseDetail(licenseKey) {
+    const modalBody = document.getElementById('license-detail-body');
+    modalBody.innerHTML = `<div class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Loading...</div>`;
+    const modal = new bootstrap.Modal(document.getElementById('licenseDetailModal'));
+    modal.show();
+
+    try {
+        const res_encrypted = await axios.get(`/api/licenses/${licenseKey}`);
+        const encryptedResponse = res_encrypted.data.encrypted_data
+        const res = JSON.parse(await client.aesDecrypt(encryptedResponse))
+        const lic = res
+
+        console.log(lic)
+        const existingDate = new Date(lic.expires_at); // Your existing date
+        const datetimelocal = formatToDateTimeLocal(existingDate);
+        
+        modalBody.innerHTML = `
+            <form id="edit-license-form">
+                <div class="mb-3">
+                    <label for="edit-license-user-id" class="form-label">User ID</label>
+                    <input type="text" class="form-control" id="edit-license-user-id" value="${lic.user_id}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="edit-license-expires-at" class="form-label">Expires At (YYYY-MM-DD HH:MM)</label>
+                    <input type="datetime-local" class="form-control" id="edit-license-expires-at" value="${datetimelocal || ''}">
+                </div>
+                <div class="mb-3">
+                    <label for="edit-license-credit-number" class="form-label">Credit Number</label>
+                    <input type="number" class="form-control" id="edit-license-credit-number" value="${lic.credit_number == 'None'?0:lic.credit_number || 0}">
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        `;
+
+        document.getElementById('edit-license-form').onsubmit = async function(e) {
+            e.preventDefault();
+            try {
+                await axios.put(`${API_BASE}/licenses/${licenseKey}`, {
+                    user_id: document.getElementById('edit-license-user-id').value,
+                    expires_at: document.getElementById('edit-license-expires-at').value || null,
+                    credit_number: document.getElementById('edit-license-credit-number').value || null
+                });
+                showAlert('License updated successfully!', 'success');
+                modal.hide();
+                await loadLicenses(licensesCurrentPage);
+            } catch (error) {
+                showAlert(error.response?.data?.error || 'Failed to update license', 'error');
+            }
+        };
+
+    } catch (err) {
+        modalBody.innerHTML = `<div class="alert alert-danger">Failed to load license details.</div>`;
+    }
+}
+
+function formatToDateTimeLocal(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
 // Clean up modals on page unload
