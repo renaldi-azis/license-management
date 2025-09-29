@@ -38,12 +38,14 @@ class License:
                 SELECT l.*, p.name as product_name, p.max_devices
                 FROM licenses l
                 JOIN products p ON l.product_id = p.id
-                WHERE l.key = ? AND l.product_id = ? AND l.machine_code = ? AND l.status = 'active'
+                WHERE l.key = ? AND l.product_id = ? AND l.machine_code = ?
             ''', (license_key, product_id, machine_code))
 
             license = c.fetchone()
             if not license:
                 return {'valid': False, 'error': 'Invalid license key or machine code'}
+            if license['status'] == 'expired':
+                return {'valid': False, 'error': 'License is expired'}
             
             expires_at = license['expires_at']
             if expires_at:
