@@ -268,7 +268,7 @@ def update_credit_number_route():
     data = request.data
     license_key = data.get('license_key')
     new_credit_number = data.get('new_credit_number')
-    
+    print(license_key, new_credit_number)
     if not license_key or not new_credit_number:
         return jsonify({'error': 'license_key and new_credit_number are required'}), 400
     

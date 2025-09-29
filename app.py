@@ -53,7 +53,6 @@ class UniversalJSONRequest(Request):
         """Parse form data as JSON"""
         if not self.form:
             return None
-        print("Convert Form into Json")
         result = {}
         for key, value in self.form.items():
             if isinstance(value, list) and len(value) == 1:
@@ -243,11 +242,9 @@ def create_app():
                         encrypted_payload = request.get_json()
                         if 'encryptedRequest' in encrypted_payload:
                             encrypted_data = encrypted_payload['encryptedRequest']
-                            print('encrypted_data', encrypted_data)
                             input_data = encrypted_data
                             if type(encrypted_data) == str:
                                 input_data = json.loads(encrypted_data)
-                            print('input_data',input_data)
                             # Decrypt the data
                             decrypted_json = crypto_manager.aes_decrypt(
                                 current_session['aes_key'],
