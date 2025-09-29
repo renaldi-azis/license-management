@@ -222,6 +222,7 @@ class SecureLicenseClient:
                 # Base64 decode the string
                 decoded_bytes = base64.b64decode(encrypted_data)
                 decoded_str = decoded_bytes.decode('utf-8')
+                print(decoded_str)
                 encrypted_data = json.loads(decoded_str)
             
             print("AES_DECRYPT parsed:", encrypted_data)
@@ -322,6 +323,8 @@ class SecureLicenseClient:
             return response
             
         except Exception as e:
+            print(e)
+            print(response)
             print(f"Request failed: {e}")
             raise
 
@@ -410,11 +413,17 @@ class SecureLicenseClient:
             
             if response.status_code == 200:
                 # Handle HttpAntiDebug response
+                encrypted_response = None
                 if hasattr(response, 'json') and callable(response.json):
                     encrypted_response = response.json()
+                    print('json', encrypted_response)
                 else:
                     encrypted_response = json.loads(response.text)
-                return self.aes_decrypt(encrypted_response)
+                    print('loads', encrypted_response)
+                encryptedRes = encrypted_response.get("encrypted_data")
+                if encryptedRes:
+                    res = self.aes_decrypt(encryptedRes)
+                return res
             else:
                 return {'error': f'Request failed: {response.status_code}'}
                 
