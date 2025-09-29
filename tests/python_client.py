@@ -511,7 +511,7 @@ if __name__ == "__main__":
                 #     result = client.check_license_validate(td['license_key'], td['product_name'], td['machine_code'])
                 #     print(f"Validation Result: {result}")
 
-                client.update_credit_number("9xfJDaHxBDG1I0eo", 50)
+                client.update_credit_number("e8tYhqwQ5OgcA3TN", 10)
 
             else:
                 print("Login failed")
