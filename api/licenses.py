@@ -192,7 +192,6 @@ def automate_license_route():
         return jsonify({'error': 'Admin access required'}), 403
     
     data = request.data
-    print(data)
     
     if contains_xss(data.get('user_id', '')) or contains_xss(data.get('machine_code', '')) or contains_xss(data.get('product_name', '')):
         return jsonify({'error': 'Invalid input detected'}), 400
@@ -257,3 +256,47 @@ def automate_license_route():
     if result['success']:
         return jsonify(result), 200
     return jsonify(result), 400
+
+@bp.route('/update/credit-number', methods=['POST'])
+@rate_limited(limit='30 per minute')  # Limit credit number updates
+@jwt_required()
+def update_credit_number_route():
+    username = get_jwt_identity()
+    if get_role_by_username(username) != 'admin':
+        return jsonify({'error': 'Admin access required'}), 403
+    
+    data = request.data
+    license_key = data.get('license_key')
+    new_credit_number = data.get('new_credit_number')
+    
+    if not license_key or not new_credit_number:
+        return jsonify({'error': 'license_key and new_credit_number are required'}), 400
+    
+    if not isinstance(new_credit_number, int) or new_credit_number < 0:
+        new_credit_number = 0  # set to 0 if invalid
+    
+    if contains_xss(license_key):
+        return jsonify({'error': 'Invalid input detected'}), 400
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM licenses WHERE key = ?", (license_key,))
+    license_record = cursor.fetchone()
+    if not license_record:
+        conn.close()
+        return jsonify({'error': 'License not found'}), 404
+    
+    cursor.execute("""
+        UPDATE licenses
+        SET credit_number = ?
+        WHERE key = ?
+    """, (new_credit_number, license_key))
+    conn.commit()
+    conn.close()
+
+    # get the updated license details
+    updated_license = get_license_detail(license_key)
+    if not updated_license:
+        return jsonify({'error': 'License not found after update'}), 404
+    
+    return jsonify({'success':True, "data":updated_license}), 200

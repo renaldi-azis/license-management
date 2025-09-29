@@ -405,9 +405,6 @@ class SecureLicenseClient:
                 payload
             )
             
-            # print(f"API response status: {response.status_code}")
-            # print(f"API response text: {response.text}")
-            
             if response.status_code == 200:
                 # Handle HttpAntiDebug response
                 encrypted_response = None
@@ -420,7 +417,9 @@ class SecureLicenseClient:
                     res = self.aes_decrypt(encryptedRes)
                 return res
             else:
-                return json.loads(response.text)
+                result = json.loads(response.text)
+                result['status'] = response.status_code
+                return result
                 
         except Exception as error:
             return {'error': f'Request failed: {str(error)}'}
@@ -433,7 +432,6 @@ class SecureLicenseClient:
             "machine_code": machine_code
         }
         response = self.send_encrypted_post_request('/licenses/automate', data)
-        print("License registration response:", response)
         return response
     def get_test_data(self):
         resp = self.anti_debug_session.get(f"/api/licenses/test/data")
@@ -460,6 +458,15 @@ class SecureLicenseClient:
         })
         print("License validation response:", resp)
         return resp
+
+    def update_credit_number(self, license_key, new_credits):
+        """Update credit number for a license"""
+        data = {
+            "license_key": license_key,
+            "new_credit_number": new_credits
+        }
+        response = self.send_encrypted_post_request('/licenses/update-credits', data)
+        return response
 
 # Usage example
 if __name__ == "__main__":
@@ -503,6 +510,8 @@ if __name__ == "__main__":
                     print(f"\nTesting validation with product_name: {td['product_name']}, license_key: {td['license_key']}, machine_code: {td['machine_code']}")
                     result = client.check_license_validate(td['license_key'], td['product_name'], td['machine_code'])
                     print(f"Validation Result: {result}")
+
+                client.update_credit_number("9vpNiWsU8nsT9CnE", 50)
 
             else:
                 print("Login failed")
