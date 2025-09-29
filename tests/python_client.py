@@ -494,14 +494,8 @@ if __name__ == "__main__":
                     print(f"Result: {result}")
                 
                 # validation test
-                validate_test_data = [{"product_name": "ProductA", "machine_code": "MACHINE123","license_key": "9vpNiWsU8nsT9CnE"}] # This is valid data
+                validate_test_data = [{"product_name": "ProductA", "machine_code": "MACHINE1234","license_key": "9vpNiWsU8nsT9CnE"}] # This is valid data
                 for td in validate_test_data:
-                    if not client.test_license_key or not client.test_product:
-                        if not client.get_test_data():
-                            print("Failed to get test license data")
-                            continue
-                    td["license_key"] = client.test_license_key
-                    td["product_name"] = client.test_product
                     print(f"\nTesting validation with product_name: {td['product_name']}, license_key: {td['license_key']}, machine_code: {td['machine_code']}")
                     result = client.check_license_validate(td['license_key'], td['product_name'], td['machine_code'])
                     print(f"Validation Result: {result}")

@@ -31,6 +31,7 @@ class License:
     def validate(product_id, license_key, machine_code):
         """Validate a license key."""   
         # Check license existence and status based on product_id , license_key and machine_code
+        machine_code = hash_machine_code(machine_code)
         with get_db_connection() as conn:
             c = conn.cursor()
             c.execute('''

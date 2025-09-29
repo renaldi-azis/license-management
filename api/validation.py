@@ -4,8 +4,6 @@ from datetime import datetime
 from models.database import get_db_connection
 from services.license_service import validate_license
 from services.rate_limiter import rate_limited, suspicious_activity_check, redis_client
-from utils.hash_utils import hash_license_key
-from utils.validators import validate_license_key
 
 bp = Blueprint('validation', __name__)
 
