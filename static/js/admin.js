@@ -491,7 +491,7 @@ async function loadLicenses(page = 1 , query = '') {
                         Details
                     </button>
                     <button class="btn btn-sm btn-outline-info" onclick="editLicenseDetail('${license.key}')">
-                        &nbsp;Edit&nbsp;
+                        &nbsp;&nbsp;Edit&nbsp;&nbsp;
                     </button>
                     <button class="btn btn-sm btn-outline-danger" onclick="removeLicense('${license.key}')">
                         Delete

@@ -341,7 +341,7 @@ def update_credit_number_route():
     if not license_record:
         conn.close()
         return jsonify({'error': 'License not found'}), 404
-    new_credit_number = license_record['credit_number'] - used_credits
+    new_credit_number = int(license_record['credit_number']) - used_credits
     if(new_credit_number < 0):
         new_credit_number = 0
     cursor.execute("""

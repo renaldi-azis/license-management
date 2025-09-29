@@ -466,7 +466,6 @@ class SecureLicenseClient:
             "used_credits": used_credits
         }
         response = self.send_encrypted_post_request('/licenses/update/credit-number', data)
-        print(response)
         return response
 
 # Usage example
