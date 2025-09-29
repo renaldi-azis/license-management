@@ -153,7 +153,7 @@ def delete_license(license_key):
     """Delete a license key."""
     return License.delete(license_key)
     
-def validate_license(product_name, license_key, ip_address, device_id=None):
+def validate_license(product_name, license_key, machine_code):
     """Validate a license key for a product."""
     # Find product by name
     product = Product.get_by_name(product_name)
@@ -162,5 +162,5 @@ def validate_license(product_name, license_key, ip_address, device_id=None):
 
     product_id = product['id']
     # Validate license using License model
-    result = License.validate(product_id, license_key, ip_address, device_id)
+    result = License.validate(product_id, license_key, machine_code)
     return result

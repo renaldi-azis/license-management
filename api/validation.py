@@ -9,14 +9,18 @@ from utils.validators import validate_license_key
 
 bp = Blueprint('validation', __name__)
 
-@bp.route('/<product_name>/<license_key>', methods=['GET'])
-@rate_limited(limit='10 per minute')  # Limit validation requests
+@bp.route('/', methods=['POST'])
+@rate_limited(limit='30 per minute')  # Limit validation requests
 @validate_license_key
-def validate_license_route(product_name, license_key):
+def validate_license_route():
     """Validate license with safety checks."""
     try:
         ip = request.remote_addr
-            
+        data = request.data
+        license_key = data['license_key']
+        product_name = data['product_name']
+        machine_code = data['machine_code']
+        
         # Safe suspicious activity check
         if suspicious_activity_check(ip):
             return jsonify({
@@ -26,7 +30,7 @@ def validate_license_route(product_name, license_key):
             }), 429
     
         # Perform validation
-        result = validate_license(product_name, license_key, ip)
+        result = validate_license(product_name, license_key, machine_code)
     
         return jsonify(result), 200 if result.get('valid') else 400
         

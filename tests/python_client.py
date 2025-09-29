@@ -25,6 +25,8 @@ class SecureLicenseClient:
         self.access_token = None
         self.access_token_cookie = None
         self.anti_debug_session = SV(server_url)
+        self.test_license_key=""
+        self.test_product=""
         
         # Set default headers for HttpAntiDebug
         self.anti_debug_session.headers.update({
@@ -264,8 +266,7 @@ class SecureLicenseClient:
                 f"/api/auth/login",
                 data=form_payload,
                 headers=headers
-            )
-            
+            )            
             print(f"Login status: {response.status_code}")
             print(f"Login response: {response.text}")
             
@@ -430,7 +431,31 @@ class SecureLicenseClient:
         response = self.send_encrypted_post_request('/licenses/automate', data)
         print("License registration response:", response)
         return response
-
+    def get_test_data(self):
+        resp = self.anti_debug_session.get(f"/api/licenses/test/data")
+        assert resp.status_code == 200, "Failed to get test license data"
+        if hasattr(resp, 'json') and callable(resp.json):
+            res_encrypted = resp.json()
+        else:
+            res_encrypted = json.loads(resp.text)
+            
+        encryptedRes = res_encrypted.get("encrypted_data")
+        if encryptedRes:
+            res = self.aes_decrypt(encryptedRes)
+        res = json.loads(res)
+        self.test_license_key = res.get("key")
+        self.test_product = res.get("product_name")
+        assert self.test_license_key and self.test_product, "Test license data incomplete"
+        return True
+    
+    def check_license_validate(self, t_license_key, t_product_name, t_machine_code):        
+        resp = self.send_encrypted_post_request('/validation', {
+            "license_key": t_license_key,
+            "product_name": t_product_name,
+            "machine_code": t_machine_code
+        })
+        print("License validation response:", resp)
+        return resp
 
 # Usage example
 if __name__ == "__main__":
@@ -448,7 +473,6 @@ if __name__ == "__main__":
             
             if client.login_user(username, password):
                 print("Login successful")
-                
                 # Test getting licenses
                 licenses = client.get_all_licenses()
                 if licenses:
@@ -468,6 +492,20 @@ if __name__ == "__main__":
                     print(f"\nTesting with user_id: {td['user_id']}, product_name: {td['product_name']}, machine_code: {td['machine_code']}")
                     result = client.register_license(td['user_id'], td['product_name'], td['machine_code'])
                     print(f"Result: {result}")
+                
+                # validation test
+                validate_test_data = [{"product_name": "ProductA", "machine_code": "MACHINE123","license_key": ""}] # This is valid data
+                for td in validate_test_data:
+                    if not client.test_license_key or not client.test_product:
+                        if not client.get_test_data():
+                            print("Failed to get test license data")
+                            continue
+                    td["license_key"] = client.test_license_key
+                    td["product_name"] = client.test_product
+                    print(f"\nTesting validation with product_name: {td['product_name']}, license_key: {td['license_key']}, machine_code: {td['machine_code']}")
+                    result = client.check_license_validate(td['license_key'], td['product_name'], td['machine_code'])
+                    print(f"Validation Result: {result}")
+                    
             else:
                 print("Login failed")
         else:

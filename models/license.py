@@ -1,5 +1,6 @@
 from models.database import get_db_connection
 from datetime import datetime, timedelta
+from utils.hash_utils import hash_machine_code
 
 class License:
     @staticmethod
@@ -27,25 +28,22 @@ class License:
                 return {'success': False, 'error': str(e)}
     
     @staticmethod
-    def validate(product_id, license_key, ip_address, device_id=None):
-        """Validate a license key."""
-        from models.product import Product        
-        
+    def validate(product_id, license_key, machine_code):
+        """Validate a license key."""   
+        # Check license existence and status based on product_id , license_key and machine_code
         with get_db_connection() as conn:
             c = conn.cursor()
             c.execute('''
                 SELECT l.*, p.name as product_name, p.max_devices
                 FROM licenses l
                 JOIN products p ON l.product_id = p.id
-                WHERE l.key = ? AND l.product_id = ? AND l.status = 'active'
-            ''', (license_key, product_id))
-            
+                WHERE l.key = ? AND l.product_id = ? AND l.machine_code = ? AND l.status = 'active'
+            ''', (license_key, product_id, machine_code))
+
             license = c.fetchone()
-            
             if not license:
-                return {'valid': False, 'error': 'Invalid license key'}
+                return {'valid': False, 'error': 'Invalid license key or machine code'}
             
-            # Check expiration
             expires_at = license['expires_at']
             if expires_at:
                 if isinstance(expires_at, str):
@@ -58,17 +56,18 @@ class License:
                     c.execute("UPDATE licenses SET status = 'expired' WHERE key = ?", (license_key,))
                     conn.commit()
                     return {'valid': False, 'error': 'License expired'}
-                
-            License.log_usage(license_key, ip_address, 'validation', 'success')
             
-            return {
+            return{
                 'valid': True,
                 'license_id': license['id'],
                 'product_name': license['product_name'],
+                'user_id': license['user_id'],
+                'machine_code': license['machine_code'],
+                'credit_number': license['credit_number'],
                 'expires_at': expires_at.isoformat() if expires_at else None,
-                'usage_count': license['usage_count'] + 1,
-                'max_devices': license['max_devices']
+                'status': license['status']
             }
+                
     
     @staticmethod
     def log_usage(license_key, ip_address, action, status='success', user_agent=None):
