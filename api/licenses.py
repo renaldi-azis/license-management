@@ -210,12 +210,24 @@ def automate_license_route():
     conn.close()
 
     #check if any of the user_id, product_name, machine_code already exists in active license
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) AS count FROM licenses
+        WHERE status = 'active' AND user_id != ? AND machine_code = ?
+    """, (data['user_id'], hash_machine_code(data['machine_code'])))
+    result = cursor.fetchone()
+    conn.close()
+    if result['count'] > 0:
+        return jsonify({'error': 'Active license is exist with user_id and machine_code'}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT COUNT(*) AS count FROM licenses
         WHERE user_id != ? AND machine_code = ?
-    """, (data['user_id'], data['machine_code']))
+    """, (data['user_id'], hash_machine_code(data['machine_code'])))
     result = cursor.fetchone()
     conn.close()
     if result['count'] > 0:
