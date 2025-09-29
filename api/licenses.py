@@ -214,13 +214,12 @@ def automate_license_route():
     cursor = conn.cursor()
     cursor.execute("""
         SELECT COUNT(*) AS count FROM licenses
-        WHERE machine_code = ?
-    """, (data['machine_code']))
+        WHERE user_id != ? AND machine_code = ?
+    """, (data['user_id'], data['machine_code']))
     result = cursor.fetchone()
     conn.close()
-    if result['count'] > 0 and result['user_id'] != data['user_id']:
-        return jsonify({'error': 'Already registered machine_code'}), 400
-
+    if result['count'] > 0:
+        return jsonify({'error': 'Already registered machine_code with another user'}), 400
     
     # get number_of_credits, license_duration_hours data for the product
     conn = get_db_connection()
