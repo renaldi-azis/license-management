@@ -114,6 +114,21 @@ def update_license_route(license_key):
         else:
             update_fields.append("expires_at = ?")
             update_values.append(data['expires_at'])
+    
+    # compare expires_at and current time to set status
+    if 'expires_at' in data:
+        from datetime import datetime
+        if data['expires_at'] is None or data['expires_at'] == '':
+            update_fields.append("status = 'active'")
+        else:
+            try:
+                expires_at_dt = datetime.strptime(data['expires_at'], '%Y-%m-%dT%H:%M')               
+                if expires_at_dt < datetime.utcnow():
+                    update_fields.append("status = 'expired'")
+                else:
+                    update_fields.append("status = 'active'")
+            except ValueError:
+                return jsonify({'error': 'Invalid expires_at format. Use YYYY-MM-DD HH:MM'}), 400
 
     if not update_fields:
         conn.close()

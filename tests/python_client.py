@@ -504,14 +504,14 @@ if __name__ == "__main__":
                 #     result = client.register_license(td['user_id'], td['product_name'], td['machine_code'])
                 #     print(f"Result: {result}")
                 
-                # # validation test
-                # validate_test_data = [{"product_name": "ProductA", "machine_code": "MACHINE1234","license_key": "9vpNiWsU8nsT9CnE"}] # This is valid data
-                # for td in validate_test_data:
-                #     print(f"\nTesting validation with product_name: {td['product_name']}, license_key: {td['license_key']}, machine_code: {td['machine_code']}")
-                #     result = client.check_license_validate(td['license_key'], td['product_name'], td['machine_code'])
-                #     print(f"Validation Result: {result}")
+                # validation test
+                validate_test_data = [{"product_name": "RichDreamVEO3Tool", "machine_code": "MACHINE1234","license_key": "ML9L42EQC76Z4Pya"}] # This is valid data
+                for td in validate_test_data:
+                    print(f"\nTesting validation with product_name: {td['product_name']}, license_key: {td['license_key']}, machine_code: {td['machine_code']}")
+                    result = client.check_license_validate(td['license_key'], td['product_name'], td['machine_code'])
+                    print(f"Validation Result: {result}")
 
-                client.update_credit_number("e8tYhqwQ5OgcA3TN", 10)
+                # client.update_credit_number("e8tYhqwQ5OgcA3TN", 10)
 
             else:
                 print("Login failed")
