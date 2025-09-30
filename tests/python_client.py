@@ -467,6 +467,24 @@ class SecureLicenseClient:
         }
         response = self.send_encrypted_post_request('/licenses/update/credit-number', data)
         return response
+    
+    def get_current_time(self):
+        """Get current server time"""
+        try:
+            response = self.anti_debug_session.get(f"/current-time")
+            print(f"Current time status: {response.status_code}")
+            print(f"Current time response: {response.text}")
+            
+            if response.status_code == 200:
+                if hasattr(response, 'json') and callable(response.json):
+                    data = response.json()
+                else:
+                    data = json.loads(response.text)
+                return data.get('current_time')
+            return None
+        except Exception as error:
+            print(f'Failed to get current time: {error}')
+            return None
 
 # Usage example
 if __name__ == "__main__":
@@ -512,6 +530,8 @@ if __name__ == "__main__":
                     print(f"Validation Result: {result}")
 
                 # client.update_credit_number("e8tYhqwQ5OgcA3TN", 10)
+
+                print(client.get_current_time())
 
             else:
                 print("Login failed")

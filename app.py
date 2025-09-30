@@ -335,6 +335,10 @@ def create_app():
                 'retry_after': 3600
             }, 429
     
+    @app.route('/current-time','GET')
+    def current_time():
+        return {'current_time': datetime.datetime.utcnow().isoformat(),'success':True}
+
     @app.context_processor
     def inject_current_user():
         try:
