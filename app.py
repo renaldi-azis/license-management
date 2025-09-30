@@ -337,7 +337,7 @@ def create_app():
     
     @app.route('/current-time',methods = ['GET'])
     def current_time():
-        return jsonify({'current_time': datetime.datetime.utcnow().isoformat(),'success':True})
+        return jsonify({'current_time': datetime.datetime.now().isoformat(),'success':True})
 
     @app.context_processor
     def inject_current_user():

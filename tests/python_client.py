@@ -477,10 +477,15 @@ class SecureLicenseClient:
             
             if response.status_code == 200:
                 if hasattr(response, 'json') and callable(response.json):
-                    data = response.json()
+                    res_encrypted = response.json()
                 else:
-                    data = json.loads(response.text)
-                return data.get('current_time')
+                    res_encrypted = json.loads(response.text)
+                encryptedRes = res_encrypted.get('encrypted_data')
+                if encryptedRes:
+                    res = self.aes_decrypt(encryptedRes)
+                res = json.loads(res)
+                current_time = res.get("current_time")
+                return current_time
             return None
         except Exception as error:
             print(f'Failed to get current time: {error}')
