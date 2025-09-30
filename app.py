@@ -335,7 +335,7 @@ def create_app():
                 'retry_after': 3600
             }), 429
     
-    @app.route('/current-time',methgod = ['GET'])
+    @app.route('/current-time',method = ['GET'])
     def current_time():
         return jsonify({'current_time': datetime.datetime.utcnow().isoformat(),'success':True})
 
