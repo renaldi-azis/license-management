@@ -1139,8 +1139,8 @@ async function showLicenseDetail(licenseKey) {
                 <li class="list-group-item"><strong>Product:</strong> ${lic.product_name}</li>
                 <li class="list-group-item"><strong>User:</strong> ${lic.user_id}</li>                
                 <li class="list-group-item"><strong>Status:</strong> 
-                    <span class="badge bg-${changeRoleToStatus(user.role)}">
-                        ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    <span class="badge bg-${changeStatus(lic.status)}">
+                        ${lic.status.charAt(0).toUpperCase() + lic.status.slice(1)}
                     </span>
                 </td></li>
                 <li class="list-group-item"><strong>Credit_Number:</strong> ${lic.credit_number}</li>
