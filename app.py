@@ -330,14 +330,14 @@ def create_app():
     def check_suspicious_activity():        
         ip = get_remote_address()
         if suspicious_activity_check(ip):
-            return {
+            return jsonify({
                 'error': 'Too many requests from this IP. Please try again later.',
                 'retry_after': 3600
-            }, 429
+            }), 429
     
-    @app.route('/current-time','GET')
+    @app.route('/current-time',methgod = ['GET'])
     def current_time():
-        return {'current_time': datetime.datetime.utcnow().isoformat(),'success':True}
+        return jsonify({'current_time': datetime.datetime.utcnow().isoformat(),'success':True})
 
     @app.context_processor
     def inject_current_user():
