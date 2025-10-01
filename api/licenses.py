@@ -285,7 +285,7 @@ def automate_license_route():
     # check if any active license of the user_id, machine_code with same product_name already exists
     cursor.execute("""
         SELECT COUNT(*) AS count FROM licenses
-        WHERE status = 'active' AND user_id = ? AND machine_code = ? AND product_id = ?
+        WHERE (user_id = ? OR machine_code = ?) AND product_id = ?
     """, (data['user_id'], hash_machine_code(data['machine_code']), product_id))
     result = cursor.fetchone()
     conn.close()

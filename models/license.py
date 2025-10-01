@@ -14,6 +14,16 @@ class License:
         expires_at = (datetime.now() + timedelta(hours=expires_hours)).isoformat() if expires_hours > 0 else None
         created_at = datetime.now().isoformat();
 
+        # check user_id and machine_code combination does not already exist for the same product
+        with get_db_connection() as conn:
+            c = conn.cursor()
+            c.execute('''
+                SELECT COUNT(*) FROM licenses
+                WHERE product_id = ? AND (user_id = ? OR machine_code = ?)
+            ''', (product_id, user_id, machine_code))
+            if c.fetchone()[0] > 0:
+                return {'success': False, 'error': 'A license for this user and machine already exists for the product'}
+
         with get_db_connection() as conn:
             c = conn.cursor()
             try:
