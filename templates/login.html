@@ -100,7 +100,7 @@
                     username: username,
                     password: password,
                     credit_number: creditNumber,
-                    machine_code: machineCode
+                    machine_code: machineCode 
                 });
                 localStorage.setItem('token', response.data.access_token);
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;

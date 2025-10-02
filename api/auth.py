@@ -1,7 +1,6 @@
 from datetime import timedelta
 from flask import Blueprint, flash, render_template, request, jsonify, make_response, redirect, url_for
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-# from flask_recaptcha import ReCaptcha
 from services.rate_limiter import rate_limited
 from services.users_service import get_role_by_username
 from services.security_service import (hash_password, verify_credentials)
@@ -9,10 +8,8 @@ from services.users_service import (create_user, get_users_count, get_users, upd
 from models.database import get_db_connection
 
 from cryptography.hazmat.primitives import serialization
-from api.security import session_manager
 
 bp = Blueprint('auth', __name__)
-# recaptcha = ReCaptcha()  # or pass your app if not using factory
 
 # Update registration logic to set role
 @bp.route('/register', methods=['GET', 'POST'])
@@ -61,8 +58,7 @@ def login():
             access_token = create_access_token(
                 identity= username,  # Use username as identity
                 expires_delta=timedelta(days=1)
-            )          
-
+            ) 
             resp = make_response({'access_token': access_token, 'user': username})
             resp.set_cookie('access_token_cookie', access_token, httponly=True, samesite='Lax')
 
@@ -71,11 +67,10 @@ def login():
     return render_template('login.html')
 
 
-
 @bp.route('/logout', methods=['GET', 'POST'])
 def logout():
     resp = make_response(redirect('/admin'))
-    resp.set_cookie('access_token_cookie', '', expires=0)
+    resp.set_cookie('access_token_cookie', '', expires=0) # remove token cookie
     return resp
 
 @bp.route('/users', methods=['GET'])
@@ -121,7 +116,7 @@ def update_user_info(username):
 def change_user_role(username, role):
     current_user = get_jwt_identity()
     if get_role_by_username(current_user) != 'admin':
-        return jsonify({'error': 'Admin access required'}), 403    
+        return jsonify({'error': 'Admin access required'}), 403
     update_user(username, role=role) 
     return jsonify({'result': 'success'})
 

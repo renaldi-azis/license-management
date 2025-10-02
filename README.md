@@ -64,7 +64,7 @@ This project is a secure license management server with a RESTful API, designed 
 
 1. **Initialize Database:**
    ```sh
-   python -c "from models.database import drop_users_table; drop_users_table()"
+   python -c "from models.database import drop_users_table; drop_users_table()" 
    python -c "from models.database import insert_default_users; insert_default_users()"
    python -c "from models.database import init_db; init_db()"
    ```
@@ -80,3 +80,6 @@ This project is a secure license management server with a RESTful API, designed 
 
 For questions or support, contact:  
 Phuong
+
+
+

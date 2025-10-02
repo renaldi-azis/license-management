@@ -132,7 +132,8 @@ def create_app():
             app.logger.error(f"Health check failed: {e}")
             return {'status': 'unhealthy', 'error': str(e)}, 503
     
-    # Register blueprints
+    # Register blueprints 
+    # All routes
     app.register_blueprint(auth.bp, url_prefix='/api/auth')
     app.register_blueprint(licenses.bp, url_prefix='/api/licenses')
     app.register_blueprint(products.bp, url_prefix='/api/products')
@@ -197,6 +198,9 @@ def create_app():
             'status': 'session_created'
         })
     
+    # all the responses is send through this endpoint
+    # all the responses are encrypted in this function
+    # so if you want change encryption method, you have to review this method
     @app.after_request
     def encrypt_response(response):
         """Encrypt JSON responses if session and AES key are established"""
@@ -227,7 +231,9 @@ def create_app():
                 # In case of error, return original response unmodified
                 pass
         return response
-                
+    
+    # all the requests are sent to the endpoints through this endpoint
+    # all the requests are decrypted in this function, and then sent to the all endpoints
     @app.before_request
     def decrypt_request():
         """Decrypt incoming JSON requests if session and AES key are established"""
