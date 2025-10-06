@@ -40,7 +40,6 @@ def register():
 @rate_limited(limit='10 per minute')  # Limit login attempts
 def login():
     if request.method == 'POST':
-        print(request)
         data = request.get_json()
         username, password = data['username'], data['password']
         with get_db_connection() as conn:
