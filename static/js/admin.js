@@ -2,6 +2,8 @@
 
 let productsCurrentPage = 1;
 let licensesCurrentPage = 1;
+let usersCurrentPage = 1;
+let settingsCurrentPage = 1;
 let productChoices = null;
 let productSearchChoices = null;
 let productSettingChoices = null;
@@ -1279,6 +1281,9 @@ async function loadSettings(page = 1, query = '') {
         `).join('');
         renderPagination('settings-pagination', pagination.page, pagination.total, (p) => {
             // No pagination for settings yet
+            settingsCurrentPage = p;
+            loadSettings(p);
+            
         });
         showSettingsTable();
     }catch(error){
