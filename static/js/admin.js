@@ -312,7 +312,7 @@ async function loadProducts(page = 1, query = '') {
         tbody.innerHTML = products.map(product => `
             <tr class="fade-in">
                 <td><strong>${product.name}</strong></td>
-                <td>${(product.description?product.description.slice(0, 50):'') + (product.description.length > 50?'...':'') || ''}</td>
+                <td>${(product.description?product.description.slice(0, 50):'') + (product.description?.length > 50?'...':'') || ''}</td>
                 <td>
                     <span class="badge bg-${(product.active_licenses || 0) == 0? "danger" : "success" }">${product.active_licenses || 0} / ${product.total_licenses || 0}</span>
                     
