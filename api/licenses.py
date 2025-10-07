@@ -235,25 +235,50 @@ def backup_licenses():
     if get_role_by_username(username) != 'admin':
         return jsonify({'error': 'Admin access required'}), 403
 
+    # save all tablese in excel file as different sheets
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM licenses")
-    rows = cursor.fetchall()
+    cursor.execute("""
+        SELECT l.key, l.user_id, l.machine_code, l.credit_number, l.status, l.usage_count,
+               l.expires_at, l.created_at, p.name AS product_name
+        FROM licenses l
+        JOIN products p ON l.product_id = p.id
+    """)
+    licenses_rows = cursor.fetchall()
     conn.close()
 
-    licenses = [dict(row) for row in rows]
-    df = pd.DataFrame(licenses)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM products")
+    product_rows = cursor.fetchall()
+    conn.close()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT s.id, p.name AS product_name, s.number_of_credits, s.license_duration_hours, s.created_at
+        FROM settings s
+        JOIN products p ON s.product_id = p.id
+    """)
+    settings_rows = cursor.fetchall()
+    conn.close()
+    
+    df_licenses = pd.DataFrame([dict(row) for row in licenses_rows])
+    df_products = pd.DataFrame([dict(row) for row in product_rows])
+    df_settings = pd.DataFrame([dict(row) for row in settings_rows])
     output = io.BytesIO()
     # Use ExcelWriter, then close and seek
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Licenses')
+        df_products.to_excel(writer, index=False, sheet_name='Products')
+        df_licenses.to_excel(writer, index=False, sheet_name='Licenses')        
+        df_settings.to_excel(writer, index=False, sheet_name='Settings')
     output.seek(0)
 
     return send_file(
         output,
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         as_attachment=True,
-        download_name='licenses_backup.xlsx'
+        download_name='database_backup.xlsx'
     )
 
 @bp.route('/automate', methods=['POST'])
