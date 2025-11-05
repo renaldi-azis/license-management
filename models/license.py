@@ -42,6 +42,7 @@ class License:
         """Validate a license key."""   
         # Check license existence and status based on product_id , license_key and machine_code
         machine_code = hash_machine_code(machine_code)
+        print(machine_code)
         with get_db_connection() as conn:
             c = conn.cursor()
             c.execute('''
@@ -52,6 +53,7 @@ class License:
             ''', (license_key, product_id, machine_code))
 
             license = c.fetchone()
+            print(license)
             if not license:
                 return {'valid': False, 'error': 'Invalid license key or machine code'}
             if license['status'] == 'expired':

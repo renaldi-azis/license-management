@@ -17,7 +17,7 @@ def validate_license_route():
         license_key = data['license_key']
         product_name = data['product_name']
         machine_code = data['machine_code']
-        
+        print(license_key, product_name, machine_code)
         # Safe suspicious activity check
         if suspicious_activity_check(ip):
             return jsonify({
@@ -32,6 +32,7 @@ def validate_license_route():
         return jsonify(result), 200 if result.get('valid') else 400
         
     except Exception as e:
+        print(e)
         # Log error but don't expose details
         if hasattr(bp, 'logger'):
             bp.logger.error(f"Validation error for {product_name}/{license_key}: {e}")

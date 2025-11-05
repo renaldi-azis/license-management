@@ -157,6 +157,7 @@ def validate_license(product_name, license_key, machine_code):
     """Validate a license key for a product."""
     # Find product by name
     product = Product.get_by_name(product_name)
+    print(product)
     if not product:
         return {'valid': False, 'error': 'Product not found'}
 
