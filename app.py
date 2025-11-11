@@ -1,11 +1,13 @@
 import base64
 import datetime
 import json
+import socket
 from flask import Flask, redirect, request, jsonify, render_template, url_for
 from flask_jwt_extended import JWTManager, get_jwt_identity, verify_jwt_in_request
 from flask_limiter.util import get_remote_address
 from flask_cors import CORS
 from flask import Request
+from datetime import timedelta
 
 from config import Config
 from api import auth, licenses, products , validation, settings
@@ -75,8 +77,13 @@ class UniversalJSONRequest(Request):
 def create_app():
     app = Flask(__name__)
     app.request_class = UniversalJSONRequest
-    
+
     app.config.from_object(Config)
+
+    # Apply timeout configurations for stability
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=app.config.get('PERMANENT_SESSION_LIFETIME', 1800))
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = timedelta(seconds=app.config.get('SEND_FILE_MAX_AGE_DEFAULT', 300))
+
     limiter.init_app(app)
 
     # Register error handlers first
@@ -117,13 +124,13 @@ def create_app():
                 from models.database import get_db_connection
                 with get_db_connection() as conn:
                     conn.execute("SELECT 1")
-            
-            # Test Redis (if available)            
+
+            # Test Redis (if available)
             redis_status = "connected" if redis_client and redis_client.ping() else "unavailable"
-            
+
             return {
                 'status': 'healthy',
-                'timestamp': app.config.get('TESTING', False) and "test" or str(datetime.utcnow()),
+                'timestamp': app.config.get('TESTING', False) and "test" or str(datetime.datetime.utcnow()),
                 'database': 'connected',
                 'redis': redis_status,
                 'version': '1.2.0'
@@ -131,6 +138,59 @@ def create_app():
         except Exception as e:
             app.logger.error(f"Health check failed: {e}")
             return {'status': 'unhealthy', 'error': str(e)}, 503
+
+    # Enhanced health check with connection diagnostics
+    @app.route('/health/detailed')
+    def detailed_health():
+        """Detailed health check with connection diagnostics"""
+        health_status = {
+            'status': 'healthy',
+            'timestamp': str(datetime.datetime.utcnow()),
+            'checks': {},
+            'version': '1.2.0'
+        }
+
+        # Test database connectivity
+        try:
+            from models.database import get_db_connection
+            with get_db_connection() as conn:
+                conn.execute("SELECT 1")
+            health_status['checks']['database'] = 'connected'
+        except Exception as e:
+            health_status['checks']['database'] = f'error: {str(e)}'
+            health_status['status'] = 'degraded'
+
+        # Test Redis connectivity
+        try:
+            if redis_client and redis_client.ping():
+                health_status['checks']['redis'] = 'connected'
+            else:
+                health_status['checks']['redis'] = 'unavailable'
+        except Exception as e:
+            health_status['checks']['redis'] = f'error: {str(e)}'
+            health_status['status'] = 'degraded'
+
+        # Test internet connectivity
+        try:
+            socket.create_connection(("8.8.8.8", 53), timeout=5)
+            health_status['checks']['internet'] = 'connected'
+        except Exception as e:
+            health_status['checks']['internet'] = f'error: {str(e)}'
+            health_status['status'] = 'degraded'
+
+        # Test session manager
+        try:
+            session_count = len(session_manager.sessions) if hasattr(session_manager, 'sessions') else 0
+            health_status['checks']['session_manager'] = f'active_sessions: {session_count}'
+        except Exception as e:
+            health_status['checks']['session_manager'] = f'error: {str(e)}'
+            health_status['status'] = 'degraded'
+
+        # Overall status determination
+        if any('error' in str(status) for status in health_status['checks'].values()):
+            health_status['status'] = 'unhealthy'
+
+        return jsonify(health_status), 200 if health_status['status'] == 'healthy' else 503
     
     # Register blueprints 
     # All routes

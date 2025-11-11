@@ -12,9 +12,12 @@ from cryptography.hazmat.primitives import padding as sym_padding
 from urllib.parse import quote
 from HttpAntiDebug import SessionServer as SV
 import os
+import logging
+import socket
+import ssl
 
 class SecureLicenseClient:
-    def __init__(self, server_url):
+    def __init__(self, server_url, timeout=30, max_retries=3, enable_logging=True):
         self.server_url = server_url
         self.client_id = 'x-client'
         self.session_id = None
@@ -27,37 +30,105 @@ class SecureLicenseClient:
         self.anti_debug_session = SV(server_url)
         self.test_license_key=""
         self.test_product=""
-        
+        self.default_timeout = timeout
+        self.default_max_retries = max_retries
+
+        # Setup logging
+        if enable_logging:
+            logging.basicConfig(
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            self.logger = logging.getLogger('SecureLicenseClient')
+        else:
+            self.logger = None
+
         # Set default headers for HttpAntiDebug
         self.anti_debug_session.headers.update({
             'X-Client-ID': self.client_id,
             'Content-Type': 'application/json'
         })
 
-    def initialize_session(self):
-        """Initialize session with server using HttpAntiDebug"""
-        try:
-            response = self.anti_debug_session.get(f"/init-session")
-            print(f"Init session status: {response.status_code}")
-            print(f"Init session response: {response.text}")
-            
-            if response.status_code == 200:
-                # Handle HttpAntiDebug response
-                if hasattr(response, 'json') and callable(response.json):
-                    data = response.json()
+    def _log(self, level, message, *args, **kwargs):
+        """Internal logging method"""
+        if self.logger:
+            self.logger.log(level, message, *args, **kwargs)
+        else:
+            print(f"[{level}] {message}")
+
+    def _categorize_error(self, error):
+        """Categorize connection errors for better handling"""
+        error_str = str(error).lower()
+
+        if 'winerror 10060' in error_str or 'connection attempt failed' in error_str:
+            return 'connection_timeout'
+        elif 'connection refused' in error_str or 'connection reset' in error_str:
+            return 'connection_refused'
+        elif 'ssl' in error_str or 'certificate' in error_str:
+            return 'ssl_error'
+        elif 'timeout' in error_str:
+            return 'timeout'
+        elif 'dns' in error_str or 'name resolution' in error_str:
+            return 'dns_error'
+        else:
+            return 'unknown_error'
+
+    def initialize_session(self, max_retries=None, timeout=None):
+        """Initialize session with server using HttpAntiDebug with retry logic"""
+        import time
+
+        if max_retries is None:
+            max_retries = self.default_max_retries
+        if timeout is None:
+            timeout = self.default_timeout
+
+        for attempt in range(max_retries):
+            try:
+                self._log(logging.INFO, f"Attempting session initialization (attempt {attempt + 1}/{max_retries})...")
+                # Add timeout if HttpAntiDebug supports it
+                if hasattr(self.anti_debug_session, 'timeout'):
+                    response = self.anti_debug_session.get(f"/init-session", timeout=timeout)
                 else:
-                    data = json.loads(response.text)
-                
-                self.session_id = data['session_id']
-                self.server_public_key = self.import_public_key(data['server_public_key'])
-                
-                # Update session ID header
-                self.anti_debug_session.headers.update({'X-Session-ID': self.session_id})
-                return True
-            return False
-        except Exception as error:
-            print(f'Session initialization failed: {error}')
-            return False
+                    response = self.anti_debug_session.get(f"/init-session")
+
+                self._log(logging.INFO, f"Init session status: {response.status_code}")
+                self._log(logging.DEBUG, f"Init session response: {response.text}")
+
+                if response.status_code == 200:
+                    # Handle HttpAntiDebug response
+                    if hasattr(response, 'json') and callable(response.json):
+                        data = response.json()
+                    else:
+                        data = json.loads(response.text)
+
+                    self.session_id = data['session_id']
+                    self.server_public_key = self.import_public_key(data['server_public_key'])
+
+                    # Update session ID header
+                    self.anti_debug_session.headers.update({'X-Session-ID': self.session_id})
+                    self._log(logging.INFO, "Session initialized successfully")
+                    return True
+                elif response.status_code >= 500:
+                    # Server error, retry
+                    if attempt < max_retries - 1:
+                        wait_time = 2 ** attempt  # Exponential backoff
+                        self._log(logging.WARNING, f"Server error {response.status_code}, retrying in {wait_time} seconds...")
+                        time.sleep(wait_time)
+                        continue
+                else:
+                    self._log(logging.ERROR, f"Session initialization failed with status {response.status_code}")
+                return False
+            except Exception as error:
+                error_type = self._categorize_error(error)
+                self._log(logging.ERROR, f'Session initialization failed (attempt {attempt + 1}): {error} (type: {error_type})')
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    self._log(logging.INFO, f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    self._log(logging.ERROR, f"All {max_retries} attempts failed.")
+                    return False
+        return False
 
     def base64_to_bytes(self, base64_string):
         """Convert base64 string to bytes"""
@@ -96,70 +167,94 @@ class SecureLicenseClient:
         )
         return public_key_bytes.decode('utf-8')
 
-    def perform_key_exchange(self):
-        """Perform RSA key exchange with server using HttpAntiDebug"""
-        print("Performing key exchange...")
-        try:
-            # Generate client key pair
-            self.generate_key_pair()
-            
-            # Generate AES key
-            self.aes_key = secrets.token_bytes(32)  # 256-bit AES key
-            
-            # Encrypt AES key with server's public key
-            encrypted_aes_key = self.server_public_key.encrypt(
-                self.aes_key,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None
-                )
-            )
-            
-            # Export client public key
-            client_public_key_pem = self.export_public_key()            
-            
-            print(f"Key exchange payload prepared")
-            
-             # METHOD 1: Try to send as raw JSON with proper Content-Type
-            headers = {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-Client-ID': self.client_id,
-                'X-Session-ID': self.session_id
-            }
+    def perform_key_exchange(self, max_retries=None, timeout=None):
+        """Perform RSA key exchange with server using HttpAntiDebug with retry logic"""
+        import time
 
-            # Prepare JSON payload as string
-            json_payload = json.dumps({
-                'session_id': self.session_id,
-                'encrypted_aes_key': self.bytes_to_base64(encrypted_aes_key),
-                'client_public_key': client_public_key_pem
-            })            
-            form_payload = {'json_data': json_payload}
-            response = self.anti_debug_session.post(
-                f"/key-exchange",
-                data=form_payload,
-                headers=headers
-            )
-            
-            print(f"Key exchange status: {response.status_code}")
-            print(f"Key exchange response: {response.text}")
-            
-            if response.status_code == 200:
-                # Handle HttpAntiDebug response
-                if hasattr(response, 'json') and callable(response.json):
-                    result = response.json()
+        if max_retries is None:
+            max_retries = self.default_max_retries
+        if timeout is None:
+            timeout = self.default_timeout
+
+        self._log(logging.INFO, "Performing key exchange...")
+        for attempt in range(max_retries):
+            try:
+                self._log(logging.INFO, f"Key exchange attempt {attempt + 1}/{max_retries}...")
+                # Generate client key pair
+                self.generate_key_pair()
+
+                # Generate AES key
+                self.aes_key = secrets.token_bytes(32)  # 256-bit AES key
+
+                # Encrypt AES key with server's public key
+                encrypted_aes_key = self.server_public_key.encrypt(
+                    self.aes_key,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None
+                    )
+                )
+
+                # Export client public key
+                client_public_key_pem = self.export_public_key()
+
+                self._log(logging.DEBUG, "Key exchange payload prepared")
+
+                # METHOD 1: Try to send as raw JSON with proper Content-Type
+                headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Client-ID': self.client_id,
+                    'X-Session-ID': self.session_id
+                }
+
+                # Prepare JSON payload as string
+                json_payload = json.dumps({
+                    'session_id': self.session_id,
+                    'encrypted_aes_key': self.bytes_to_base64(encrypted_aes_key),
+                    'client_public_key': client_public_key_pem
+                })
+                form_payload = {'json_data': json_payload}
+
+                # Add timeout if supported
+                kwargs = {'data': form_payload, 'headers': headers}
+                if hasattr(self.anti_debug_session, 'timeout'):
+                    kwargs['timeout'] = timeout
+
+                response = self.anti_debug_session.post(f"/key-exchange", **kwargs)
+
+                self._log(logging.INFO, f"Key exchange status: {response.status_code}")
+                self._log(logging.DEBUG, f"Key exchange response: {response.text}")
+
+                if response.status_code == 200:
+                    # Handle HttpAntiDebug response
+                    if hasattr(response, 'json') and callable(response.json):
+                        result = response.json()
+                    else:
+                        result = json.loads(response.text)
+                    self._log(logging.INFO, f"Key exchange result: {result}")
+                    return True
+                elif response.status_code >= 500:
+                    # Server error, retry
+                    if attempt < max_retries - 1:
+                        wait_time = 2 ** attempt  # Exponential backoff
+                        self._log(logging.WARNING, f"Server error, retrying key exchange in {wait_time} seconds...")
+                        time.sleep(wait_time)
+                        continue
+
+                return False
+
+            except Exception as error:
+                error_type = self._categorize_error(error)
+                self._log(logging.ERROR, f'Key exchange failed (attempt {attempt + 1}): {error} (type: {error_type})')
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # Exponential backoff
+                    self._log(logging.INFO, f"Retrying key exchange in {wait_time} seconds...")
+                    time.sleep(wait_time)
                 else:
-                    result = json.loads(response.text)
-                print(f"Key exchange result: {result}")
-                return True
-            
-            return False
-            
-        except Exception as error:
-            print(f'Key exchange failed: {error}')
-            import traceback
-            traceback.print_exc()
-            return False
+                    self._log(logging.ERROR, f"All {max_retries} key exchange attempts failed.")
+                    return False
+        return False
 
     def pkcs7_pad(self, data):
         """PKCS7 padding implementation"""
@@ -296,34 +391,57 @@ class SecureLicenseClient:
             traceback.print_exc()
             return False
 
-    def _make_authenticated_request(self, method, endpoint, data=None):
-        """Make authenticated request with HttpAntiDebug and manual cookie handling"""
-        try:
-            # Prepare headers with manual cookie
-            headers = self.anti_debug_session.headers.copy()
-            
-            # Add manual cookie header if we have the token
-            if self.access_token_cookie:
-                headers['Cookie'] = f'access_token_cookie={self.access_token_cookie}'
-            
-            if method.upper() == 'GET':
-                response = self.anti_debug_session.get(endpoint, headers=headers)
-            elif method.upper() == 'POST':
-                if data:
-                    # For POST requests, use form data
-                    headers['Content-Type'] = 'application/x-www-form-urlencoded'
-                    json_payload = json.dumps(data)
-                    form_data = {"json_data" : json_payload}
-                    response = self.anti_debug_session.post(endpoint, data=form_data, headers=headers)
+    def _make_authenticated_request(self, method, endpoint, data=None, timeout=None, max_retries=None):
+        """Make authenticated request with HttpAntiDebug and manual cookie handling with retry logic"""
+        import time
+
+        if timeout is None:
+            timeout = self.default_timeout
+        if max_retries is None:
+            max_retries = self.default_max_retries
+
+        for attempt in range(max_retries):
+            try:
+                # Prepare headers with manual cookie
+                headers = self.anti_debug_session.headers.copy()
+
+                # Add manual cookie header if we have the token
+                if self.access_token_cookie:
+                    headers['Cookie'] = f'access_token_cookie={self.access_token_cookie}'
+
+                # Prepare request kwargs
+                kwargs = {'headers': headers}
+                if hasattr(self.anti_debug_session, 'timeout'):
+                    kwargs['timeout'] = timeout
+
+                if method.upper() == 'GET':
+                    response = self.anti_debug_session.get(endpoint, **kwargs)
+                elif method.upper() == 'POST':
+                    if data:
+                        # For POST requests, use form data
+                        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+                        json_payload = json.dumps(data)
+                        form_data = {"json_data" : json_payload}
+                        kwargs['data'] = form_data
+                        kwargs['headers'] = headers
+                        response = self.anti_debug_session.post(endpoint, **kwargs)
+                    else:
+                        response = self.anti_debug_session.post(endpoint, **kwargs)
                 else:
-                    response = self.anti_debug_session.post(endpoint, headers=headers)
-            else:
-                raise ValueError(f"Unsupported method: {method}")
-            
-            return response
-            
-        except Exception as e:
-            raise
+                    raise ValueError(f"Unsupported method: {method}")
+
+                return response
+
+            except Exception as e:
+                error_type = self._categorize_error(e)
+                self._log(logging.ERROR, f"Request failed (attempt {attempt + 1}): {e} (type: {error_type})")
+                if attempt < max_retries - 1:
+                    wait_time = 1 * (attempt + 1)  # Linear backoff for requests
+                    self._log(logging.INFO, f"Retrying request in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    self._log(logging.ERROR, f"All {max_retries} request attempts failed.")
+                    raise
 
     def get_all_licenses(self):
         """Get all licenses using HttpAntiDebug with manual cookie"""
@@ -468,28 +586,58 @@ class SecureLicenseClient:
         response = self.send_encrypted_post_request('/licenses/update/credit-number', data)
         return response
     
-    def get_current_time(self):
-        """Get current server time"""
-        try:
-            response = self.anti_debug_session.get(f"/current-time")
-            print(f"Current time status: {response.status_code}")
-            print(f"Current time response: {response.text}")
-            
-            if response.status_code == 200:
-                if hasattr(response, 'json') and callable(response.json):
-                    res_encrypted = response.json()
+    def get_current_time(self, timeout=None, max_retries=None):
+        """Get current server time with retry logic"""
+        import time
+
+        if timeout is None:
+            timeout = self.default_timeout
+        if max_retries is None:
+            max_retries = self.default_max_retries
+
+        for attempt in range(max_retries):
+            try:
+                self._log(logging.INFO, f"Getting current time (attempt {attempt + 1}/{max_retries})...")
+
+                kwargs = {}
+                if hasattr(self.anti_debug_session, 'timeout'):
+                    kwargs['timeout'] = timeout
+
+                response = self.anti_debug_session.get(f"/current-time", **kwargs)
+                self._log(logging.INFO, f"Current time status: {response.status_code}")
+                self._log(logging.DEBUG, f"Current time response: {response.text}")
+
+                if response.status_code == 200:
+                    if hasattr(response, 'json') and callable(response.json):
+                        res_encrypted = response.json()
+                    else:
+                        res_encrypted = json.loads(response.text)
+                    encryptedRes = res_encrypted.get('encrypted_data')
+                    if encryptedRes:
+                        res = self.aes_decrypt(encryptedRes)
+                    res = json.loads(res)
+                    current_time = res.get("current_time")
+                    self._log(logging.INFO, f"Successfully retrieved current time: {current_time}")
+                    return current_time
+                elif response.status_code >= 500:
+                    # Server error, retry
+                    if attempt < max_retries - 1:
+                        wait_time = 1 * (attempt + 1)
+                        self._log(logging.WARNING, f"Server error, retrying in {wait_time} seconds...")
+                        time.sleep(wait_time)
+                        continue
+                return None
+            except Exception as error:
+                error_type = self._categorize_error(error)
+                self._log(logging.ERROR, f'Failed to get current time (attempt {attempt + 1}): {error} (type: {error_type})')
+                if attempt < max_retries - 1:
+                    wait_time = 1 * (attempt + 1)
+                    self._log(logging.INFO, f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
                 else:
-                    res_encrypted = json.loads(response.text)
-                encryptedRes = res_encrypted.get('encrypted_data')
-                if encryptedRes:
-                    res = self.aes_decrypt(encryptedRes)
-                res = json.loads(res)
-                current_time = res.get("current_time")
-                return current_time
-            return None
-        except Exception as error:
-            print(f'Failed to get current time: {error}')
-            return None
+                    self._log(logging.ERROR, f"All {max_retries} attempts to get current time failed.")
+                    return None
+        return None
 
 # Usage example
 if __name__ == "__main__":
